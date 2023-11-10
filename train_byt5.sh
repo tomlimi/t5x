@@ -1,8 +1,7 @@
 # Model dir to save logs, ckpts, etc. in "gs://model_dir" format.
 
 
-
-MODEL_DIR=f"gs://${BUCKET}/models"
+MODEL_DIR="gs://${BUCKET}/models"
 T5X_DIR="/home/tomasz/t5x"  # directory where the T5X repo is cloned.
 TFDS_DATA_DIR="gs://allennlp-tensorflow-datasets/c4/multilingual/3.0.1"
 
