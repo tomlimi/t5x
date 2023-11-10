@@ -8,7 +8,7 @@ import t5x.byt5.tasks
 include 't5x/examples/t5/byt5/small.gin'
 include 't5x/configs/runs/pretrain.gin'
 
-
+USE_CACHED_TASKS = False
 MIXTURE_OR_TASK_NAME = "byt5_mc4"
 TRAIN_STEPS = 100000
 DROPOUT_RATE = 0.0
