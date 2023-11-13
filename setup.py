@@ -69,7 +69,7 @@ setuptools.setup(
         # sentencepiece package.
         'protobuf==3.20.3',
         't5',
-        'appache-beam'
+        'apache-beam'
     ],
     extras_require={
         'gcp': [
