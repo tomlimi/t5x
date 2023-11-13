@@ -1,7 +1,7 @@
 # Model dir to save logs, ckpts, etc. in "gs://model_dir" format.
 
-
-MODEL_DIR="gs://${BUCKET}/models"
+EXPERIMENT="byt5_small"
+MODEL_DIR="gs://${BUCKET}/models/${EXPERIMENT}"
 T5X_DIR="/home/tomasz/t5x"  # directory where the T5X repo is cloned.
 TFDS_DATA_DIR="gs://${BUCKET}/data"
 
