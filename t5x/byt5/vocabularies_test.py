@@ -68,7 +68,7 @@ class MyteVocabularyTest(absltest.TestCase):
       self.assertEqual(exp, res)
 
   def test_decode_tf_oov_tokens(self):
-    vocab = vocabularies.ByteVocabulary()
+    vocab = vocabularies.MyteVocabulary()
 
     # Add two ids that are outside the allowed interval. They should be ignored.
     ids = tuple(list(self.TEST_BYTE_IDS) + [3000, -4000])
@@ -77,7 +77,7 @@ class MyteVocabularyTest(absltest.TestCase):
     self.assertEqual(expected_str, _decode_tf(vocab, ids))
 
   def test_decode_tf_invalid_byte_sequence(self):
-    vocab = vocabularies.ByteVocabulary()
+    vocab = vocabularies.MyteVocabulary()
 
     # Add an invalid byte sequence, which should be ignored.
     ids = tuple(list(self.TEST_BYTE_IDS) + [0xC0, 0xC1])
@@ -86,7 +86,7 @@ class MyteVocabularyTest(absltest.TestCase):
     self.assertEqual(expected_str, _decode_tf(vocab, ids))
 
   def test_vocab(self):
-    vocab = vocabularies.ByteVocabulary()
+    vocab = vocabularies.MyteVocabulary()
     self.assertEqual(259, vocab.vocab_size)
     self.assertSequenceEqual(self.TEST_BYTE_IDS, vocab.encode(self.TEST_STRING))
     self.assertEqual(self.TEST_STRING, vocab.decode(self.TEST_BYTE_IDS))
@@ -96,22 +96,22 @@ class MyteVocabularyTest(absltest.TestCase):
     self.assertEqual(self.TEST_STRING, _decode_tf(vocab, self.TEST_BYTE_IDS))
 
   def test_extra_ids(self):
-    vocab = vocabularies.ByteVocabulary(extra_ids=10)
+    vocab = vocabularies.MyteVocabulary(extra_ids=10)
     self.assertEqual(269, vocab.vocab_size)
     self.assertEqual("a", vocab.decode([100]))
     self.assertEqual("", vocab.decode([268]))
 
   def test_out_of_vocab(self):
-    vocab = vocabularies.ByteVocabulary()
+    vocab = vocabularies.MyteVocabulary()
     self.assertEqual(259, vocab.vocab_size)
     self.assertEqual("", vocab.decode([260]))
 
   def test_equal(self):
-    vocab1 = vocabularies.ByteVocabulary()
-    vocab2 = vocabularies.ByteVocabulary()
+    vocab1 = vocabularies.MyteVocabulary()
+    vocab2 = vocabularies.MyteVocabulary()
     self.assertEqual(vocab1, vocab2)
 
   def test_not_equal(self):
-    vocab1 = vocabularies.ByteVocabulary()
-    vocab2 = vocabularies.ByteVocabulary(10)
+    vocab1 = vocabularies.MyteVocabulary()
+    vocab2 = vocabularies.MyteVocabulary(10)
     self.assertNotEqual(vocab1, vocab2)
