@@ -2,7 +2,7 @@
 
 EXPERIMENT="byt5_small"
 MODEL_DIR="gs://${BUCKET}/models/${EXPERIMENT}"
-T5X_DIR="/home/tomasz/t5x"  # directory where the T5X repo is cloned.
+T5X_DIR="/home/${ACCOUNT}/t5x"  # directory where the T5X repo is cloned.
 TFDS_DATA_DIR="gs://${BUCKET}/data"
 
 python3 ${T5X_DIR}/t5x/train.py \
