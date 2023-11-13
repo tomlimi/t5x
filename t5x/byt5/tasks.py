@@ -55,7 +55,7 @@ for lang in MC4_LANGS:
   seqio.TaskRegistry.add(
       "byt5_mc4.{}".format(lang.replace("-", "_")),
       source=seqio.TfdsDataSource(
-          tfds_name="c4/multilingual:3.0.1",
+          tfds_name="c4/multilingual:3.1.0",
           splits={
               "train": lang,
               "validation": f"{lang}-validation"
