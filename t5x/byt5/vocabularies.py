@@ -8,7 +8,7 @@ DECOMPOSE_MAP_PATH = "t5x/byt5/decompose_map.json"
 MERGE_MAP_PATH = "t5x/byt5/merge_map.json"
 
 class MyteVocabulary(Vocabulary):
-	"""Byte-level vocabulary.
+	"""Morphological Byte vocabulary.
 
 	Reimplements the Byte Vocabulary method from sequio, used for ByT5 modls:
 	https://arxiv.org/abs/2105.13626
@@ -18,7 +18,7 @@ class MyteVocabulary(Vocabulary):
 	"""
 
 	def __init__(self, extra_ids: int = 0):
-		"""Create a ByteVocabulary.
+		"""Create a MyteVocabulary.
 
 		Optionally, specify a number of extra ids to add to the end of the
 		vocabulary for use as sentinels.
@@ -63,7 +63,7 @@ class MyteVocabulary(Vocabulary):
 		hex_sequence = str_to_hex(s).split(' ')
 		decomposed_hex_sequence = self.decompose_rewriter.rewrite_bytes(hex_sequence)
 		merged_hex_sequence = self.merge_rewriter.rewrite_bytes(decomposed_hex_sequence)
-		return list(hex_to_str(' '.join(merged_hex_sequence)))
+		return list(hex_to_bytes(' '.join(merged_hex_sequence)))
 
 	def _convert_ids_to_strings(self, ids):
 		"""Convert ids to a python string based on UTF-8 encoding.
@@ -144,10 +144,14 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a 1d tf.Tensor with dtype tf.int32
 		"""
-		return (
-				tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
-				+ self._num_special_tokens
-		)
+
+		# TODO encode with tensorflow
+
+		raise NotImplementedError
+		# return (
+		# 		tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
+		# 		+ self._num_special_tokens
+		# )
 
 	def _decode_tf(self, ids):
 		"""Decode in TensorFlow.
@@ -158,28 +162,31 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a n-d tf.Tensor with dtype tf.string
 		"""
-		lower_bound = self._num_special_tokens
-		upper_bound = self._byte_size + self._num_special_tokens
-		ids = tf.ragged.boolean_mask(
-			data=ids,
-			mask=tf.math.logical_and(
-				tf.math.greater_equal(ids, lower_bound),
-				tf.math.less(ids, upper_bound),
-			),
-		)
-		ids = ids - self._num_special_tokens
-		string = tf.strings.reduce_join(tf.gather(self._byte_strings, ids), axis=-1)
+		# TODO decode with tensorflow
+		raise NotImplementedError
 
-		# Drop invalid byte sequences.
-		return tf.strings.unicode_transcode(
-			input=string,
-			input_encoding="UTF-8",
-			output_encoding="UTF-8",
-			errors="ignore",
-		)
+		# lower_bound = self._num_special_tokens
+		# upper_bound = self._byte_size + self._num_special_tokens
+		# ids = tf.ragged.boolean_mask(
+		# 	data=ids,
+		# 	mask=tf.math.logical_and(
+		# 		tf.math.greater_equal(ids, lower_bound),
+		# 		tf.math.less(ids, upper_bound),
+		# 	),
+		# )
+		# ids = ids - self._num_special_tokens
+		# string = tf.strings.reduce_join(tf.gather(self._byte_strings, ids), axis=-1)
+		#
+		# # Drop invalid byte sequences.
+		# return tf.strings.unicode_transcode(
+		# 	input=string,
+		# 	input_encoding="UTF-8",
+		# 	output_encoding="UTF-8",
+		# 	errors="ignore",
+		# )
 
 	def __eq__(self, other):
-		if not isinstance(other, ByteVocabulary):
+		if not isinstance(other, MyteVocabulary):
 			return False
 		return (
 				self.extra_ids == other.extra_ids
