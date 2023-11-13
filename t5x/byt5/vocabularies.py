@@ -4,8 +4,8 @@ from seqio import Vocabulary
 import tensorflow as tf
 from t5x.byt5.rewrite_bytes import ByteRewriter, hex_to_bytes, str_to_hex, bytes_to_hex, hex_to_str
 
-DECOMPOSE_MAP_PATH = "t5x/byt5/decompose_map.json"
-MERGE_MAP_PATH = "t5x/byt5/merge_map.json"
+DECOMPOSE_MAP_PATH = "decompose_map.json"
+MERGE_MAP_PATH = "merge_map.json"
 
 class MyteVocabulary(Vocabulary):
 	"""Morphological Byte vocabulary.
