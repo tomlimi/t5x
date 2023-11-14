@@ -17,4 +17,4 @@ TASK_FEATURE_LENGTHS = {'inputs': 1024, 'targets': 189}
 
 
 train_script.train:
-  eval_period = 2000
+  eval_period = 5000

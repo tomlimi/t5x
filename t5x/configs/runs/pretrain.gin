@@ -54,7 +54,7 @@ train_script.train:
   partitioner = @partitioning.PjitPartitioner()
   trainer_cls = @trainer.Trainer
   total_steps = %TRAIN_STEPS
-  eval_steps = 20
+  eval_steps = 10
   eval_period = 1000
   random_seed = %RANDOM_SEED
   use_hardware_rng = %USE_HARDWARE_RNG
@@ -71,7 +71,7 @@ train/utils.DatasetConfig:
   split = 'train'
   batch_size = %BATCH_SIZE
   shuffle = %SHUFFLE_TRAIN_EXAMPLES
-  seed = None  # use a new seed each run/restart
+  seed = 42  # use a same seed each run/restart
   use_cached = %USE_CACHED_TASKS
   pack = True
   module = %MIXTURE_OR_TASK_MODULE
@@ -91,7 +91,7 @@ utils.CheckpointConfig:
   restore = @utils.RestoreCheckpointConfig()
   save = @utils.SaveCheckpointConfig()
 utils.RestoreCheckpointConfig:
-  path = []  # initialize from scratch
+  path = %MODEL_DIR # reinitialize from model dir
 utils.SaveCheckpointConfig:
   period = 1000
   dtype = 'float32'
