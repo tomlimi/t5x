@@ -147,16 +147,14 @@ class MyteVocabulary(Vocabulary):
 		"""
 
 		# cast to string
+		@tf.py_function(Tout=tf.int32)
+		def py_encode(s):
+			s = s.decode() if isinstance(s, bytes) else s
+			ids = self._convert_strings_to_ids(s)
+			return [i + self._num_special_tokens for i in ids]
 
-		input_string = s.numpy()
-		output_bytes = self._encode(input_string)
-		return tf.constant(output_bytes, dtype=tf.int32)
-
-		# raise NotImplementedError
-		# return (
-		# 		tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
-		# 		+ self._num_special_tokens
-		# )
+		output_bytes = py_encode(s)
+		return output_bytes
 
 	def _decode_tf(self, ids):
 		"""Decode in TensorFlow.
@@ -167,32 +165,15 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a n-d tf.Tensor with dtype tf.string
 		"""
-		input_string = ids.numpy()
-		output_bytes = self._decode(input_string)
+		@tf.py_function(Tout=tf.string)
+		def py_decode(ids):
+			ids = [int(i) for i in ids]
+			ids = self._filter_non_string_ids(ids)
+			ids = [i - self._num_special_tokens for i in ids]
+			return self._convert_ids_to_strings(ids)
+
+		output_bytes = py_decode(ids)
 		return tf.constant(output_bytes, dtype=tf.string)
-
-		# TODO decode with tensorflow
-		# raise NotImplementedError
-
-		# lower_bound = self._num_special_tokens
-		# upper_bound = self._byte_size + self._num_special_tokens
-		# ids = tf.ragged.boolean_mask(
-		# 	data=ids,
-		# 	mask=tf.math.logical_and(
-		# 		tf.math.greater_equal(ids, lower_bound),
-		# 		tf.math.less(ids, upper_bound),
-		# 	),
-		# )
-		# ids = ids - self._num_special_tokens
-		# string = tf.strings.reduce_join(tf.gather(self._byte_strings, ids), axis=-1)
-		#
-		# # Drop invalid byte sequences.
-		# return tf.strings.unicode_transcode(
-		# 	input=string,
-		# 	input_encoding="UTF-8",
-		# 	output_encoding="UTF-8",
-		# 	errors="ignore",
-		# )
 
 	def __eq__(self, other):
 		if not isinstance(other, MyteVocabulary):
