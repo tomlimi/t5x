@@ -5,7 +5,7 @@ import seqio
 from t5x import adafactor
 from t5x import models
 from t5x.examples.t5 import network
-from t5x.byt5 import vocabulary
+from t5x.byt5 import vocabularies
 
 # ------------------- Loss HParam ----------------------------------------------
 Z_LOSS = 0.0001
@@ -19,7 +19,7 @@ DROPOUT_RATE = %gin.REQUIRED
 
 # Vocabulary (shared by encoder and decoder)
 # TODO: change with byte rewriting
-VOCABULARY = @vocabulary.MyteVocabulary()
+VOCABULARY = @vocabularies.MyteVocabulary()
 
 # ------------------- Optimizer ------------------------------------------------
 # `learning_rate` is set by `Trainer.learning_rate_fn`.
