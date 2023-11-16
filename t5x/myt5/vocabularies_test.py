@@ -1,5 +1,5 @@
 from absl.testing import absltest
-from t5x.byt5 import vocabularies
+from t5x.myt5 import vocabularies
 import tensorflow as tf
 import numpy as np
 

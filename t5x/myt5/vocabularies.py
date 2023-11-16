@@ -1,11 +1,12 @@
 from typing import Any, ClassVar, Dict, Iterable, Optional, Sequence, Union
+import os
 
 from seqio import Vocabulary
 import tensorflow as tf
-from t5x.byt5.rewrite_bytes import ByteRewriter, hex_to_bytes, str_to_hex, bytes_to_hex, hex_to_str
+from t5x.myt5.rewrite_bytes import ByteRewriter, hex_to_bytes, str_to_hex, bytes_to_hex, hex_to_str
 
-DECOMPOSE_MAP_PATH = "decompose_map.json"
-MERGE_MAP_PATH = "merge_map.json"
+DECOMPOSE_MAP_PATH = os.path.join(os.path.dirname(__file__), "decompose_map.json")
+MERGE_MAP_PATH = os.path.join(os.path.dirname(__file__), "decompose_map.json")
 
 class MyteVocabulary(Vocabulary):
 	"""Morphological Byte vocabulary.
@@ -145,9 +146,13 @@ class MyteVocabulary(Vocabulary):
 		  a 1d tf.Tensor with dtype tf.int32
 		"""
 
-		# TODO encode with tensorflow
+		# cast to string
 
-		raise NotImplementedError
+		input_string = s.numpy()
+		output_bytes = self._encode(input_string)
+		return tf.constant(output_bytes, dtype=tf.int32)
+
+		# raise NotImplementedError
 		# return (
 		# 		tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
 		# 		+ self._num_special_tokens
@@ -162,8 +167,12 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a n-d tf.Tensor with dtype tf.string
 		"""
+		input_string = ids.numpy()
+		output_bytes = self._decode(input_string)
+		return tf.constant(output_bytes, dtype=tf.string)
+
 		# TODO decode with tensorflow
-		raise NotImplementedError
+		# raise NotImplementedError
 
 		# lower_bound = self._num_special_tokens
 		# upper_bound = self._byte_size + self._num_special_tokens

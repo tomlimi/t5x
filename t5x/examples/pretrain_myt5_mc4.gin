@@ -2,14 +2,14 @@
 from __gin__ import dynamic_registration
 #import t5.data.mixtures
 import __main__ as train_script
-import t5x.byt5.tasks
+import t5x.myt5.tasks
 
 
 include 't5x/examples/t5/myt5/small.gin'
 include 't5x/configs/runs/pretrain.gin'
 
 USE_CACHED_TASKS = False
-MIXTURE_OR_TASK_NAME = "byt5_mc4"
+MIXTURE_OR_TASK_NAME = "myt5_mc4"
 TRAIN_STEPS = 100000
 DROPOUT_RATE = 0.0
 BATCH_SIZE = 256

@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Union
 import logging
 import binascii
+import tensorflow as tf
 
 def str_to_hex(line: str, sep: str = ' ') -> str:
 	return bytes_to_hex(bytes(line, 'utf-8'), sep)
@@ -94,3 +95,15 @@ class ByteRewriter:
 
 		return out_bytes
 
+	def rewrite_bytes_tf(self, in_bytes_tf, reverse=False):
+		# rewrite bytes in tensorflow tensor
+		# in_bytes_tf: tf.Tensor of shape (batch_size, seq_len)
+		# reverse: bool, if True, apply reverse rewriting rules
+		# return: tf.Tensor of shape (batch_size, rewritten_seq_len)
+
+		out_bytes_tf = []
+
+		for i in range(in_bytes_tf.shape[0]):
+			out_bytes_tf.append(self.rewrite_bytes(in_bytes_tf[i], reverse=reverse))
+
+		return tf.ragged.constant(out_bytes_tf)
