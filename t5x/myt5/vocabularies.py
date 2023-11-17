@@ -153,24 +153,23 @@ class MyteVocabulary(Vocabulary):
 		def merge_byte_rewrite(input_ids: tf.Tensor):
 			return self.merge_rewriter.rewrite_bytes_tf(input_ids, reverse=False)
 		ids = tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
-		dims = ids.get_shape().ndims
-		if dims == 1:
+
+		expanded = False
+		if ids.get_shape().ndims == 1:
+			expanded = True
 			ids = tf.expand_dims(ids, axis=0)
-		if dims == 3:
-			ids = tf.squeeze(ids, axis=1)
 
 		# 1. decomoposing
 		ids = tf.map_fn(decompose_byte_rewrite, ids, dtype=tf.int32,
-		                           fn_output_signature=tf.RaggedTensorSpec(shape=[None], dtype=tf.int32))
+		                           fn_output_signature=tf.int32, parallel_iterations=32)
 		# 2. merge
 		ids = tf.map_fn(merge_byte_rewrite, ids, dtype=tf.int32,
-		                             fn_output_signature=tf.RaggedTensorSpec(shape=[None], dtype=tf.int32))
+		                             fn_output_signature=tf.int32, parallel_iterations=32)
 
-		if dims == 1:
-			ids = tf.reshape(ids, [-1])
+		if expanded:
+			ids = tf.squeeze(ids, axis=0)
 
 		return ids + self._num_special_tokens
-
 
 	def _decode_tf(self, ids):
 		"""Decode in TensorFlow.
@@ -199,26 +198,21 @@ class MyteVocabulary(Vocabulary):
 			),
 		)
 		ids = ids - self._num_special_tokens
-		# initial_dims = ids.get_shape().ndims
-		# print(initial_dims)
-		# if tf.rank(initial_dims) == 1 and initial_dims == 1:
 
-
-		dims = ids.get_shape().ndims
-		if dims == 1:
+		expanded = False
+		if ids.get_shape().ndims == 1:
+			expanded = True
 			ids = tf.expand_dims(ids, axis=0)
-		if dims == 3:
-			ids = tf.squeeze(ids, axis=1)
 
 		# 1. demerging
 		ids = tf.map_fn(demerge_byte_rewrite, ids, dtype=tf.int32,
-		                           fn_output_signature=tf.RaggedTensorSpec(shape=[None], dtype=tf.int32))
+		                           fn_output_signature=tf.int32, parallel_iterations=32)
 		# 2. dedecomposing
 		ids = tf.map_fn(dedecompose_byte_rewrite, ids, dtype=tf.int32,
-		                             fn_output_signature=tf.RaggedTensorSpec(shape=[None], dtype=tf.int32))
+		                             fn_output_signature=tf.int32, parallel_iterations=32)
 
-		if dims == 1:
-			ids = tf.reshape(ids, [-1])
+		if expanded:
+			ids = tf.squeeze(ids, axis=0)
 
 		string = tf.strings.reduce_join(tf.gather(self._byte_strings, ids), axis=-1)
 

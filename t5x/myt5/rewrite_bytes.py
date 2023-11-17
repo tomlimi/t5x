@@ -87,6 +87,11 @@ class ByteRewriter:
 		return out_bytes
 
 	def rewrite_bytes_tf(self, in_bytes: tf.Tensor, reverse=False) -> List[int]:
+		# We want to return the tensor with the same dimensionality as before
+		if isinstance(in_bytes, tf.RaggedTensor):
+			in_bytes = in_bytes.to_tensor()
+		in_shape = tf.shape(in_bytes)
+		in_bytes = tf.reshape(in_bytes, [-1])
 
 		out_bytes = []
 		b_start = 0
@@ -112,4 +117,9 @@ class ByteRewriter:
 			out_bytes.extend(cur_leaf)
 			b_start = b_end + 1
 
-		return tf.constant(out_bytes, dtype=tf.int32)
+		out_bytes_len = len(out_bytes)
+		out_bytes = tf.constant(out_bytes, dtype=tf.int32)
+		desired_shape = tf.concat([in_shape[:-1], tf.constant([out_bytes_len], dtype=tf.int32)], axis=0)
+		out_bytes = tf.reshape(out_bytes, desired_shape)
+
+		return out_bytes

@@ -2,6 +2,9 @@ from absl.testing import absltest
 from t5x.myt5 import vocabularies
 import tensorflow as tf
 import numpy as np
+import unicodedata
+from tqdm import tqdm
+import os
 
 
 def _decode_tf(vocab, tokens):
@@ -47,6 +50,8 @@ class MyteVocabularyTest(absltest.TestCase):
       168,
       192,
   )
+
+  TEST_FILE = os.path.join(os.path.dirname(__file__), "test_texts.txt")
 
   def test_decode_tf(self):
     vocab = self.vocab
@@ -116,3 +121,29 @@ class MyteVocabularyTest(absltest.TestCase):
     vocab1 = vocabularies.MyteVocabulary()
     vocab2 = vocabularies.MyteVocabulary(10)
     self.assertNotEqual(vocab1, vocab2)
+
+
+class MyteVocabularyCorpusTest(absltest.TestCase):
+    np.random.seed(42)
+    vocab = vocabularies.MyteVocabulary()
+    TEST_FILE = os.path.join(os.path.dirname(__file__), "test_texts.txt")
+    BATCH_SIZE = 256
+
+    def get_normalized_line_sample(cls, n_lines):
+        with open(cls.TEST_FILE, "r") as corpus_file:
+            lines = corpus_file.readlines()
+
+        lines_normalized = [unicodedata.normalize('NFC', line.strip()) for line in lines]
+        # sample
+        return np.random.choice(lines_normalized, n_lines)
+
+    def test_corpus(self):
+        vocab = self.vocab
+
+        normalized_lines = self.get_normalized_line_sample(100)
+
+        for line in tqdm(normalized_lines):
+            line.strip()
+            encoded = vocab.encode_tf(tf.constant(line, dtype=tf.string))
+            decoded_normalized = unicodedata.normalize('NFC',vocab.decode_tf(encoded).numpy().decode("UTF-8"))
+            self.assertEqual(line, decoded_normalized)
