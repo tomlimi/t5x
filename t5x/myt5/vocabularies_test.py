@@ -17,7 +17,9 @@ def _decode_tf(vocab, tokens):
 
 
 class MyteVocabularyTest(absltest.TestCase):
-  TEST_STRING = "this is a test 🤗 你好"
+
+  vocab = vocabularies.MyteVocabulary()
+  TEST_STRING = "this is a test 🤗 你好"
   TEST_BYTE_IDS = (
       119,
       107,
@@ -47,7 +49,7 @@ class MyteVocabularyTest(absltest.TestCase):
   )
 
   def test_decode_tf(self):
-    vocab = vocabularies.MyteVocabulary()
+    vocab = self.vocab
 
     for rank in range(0, 3):
       ids = self.TEST_BYTE_IDS
@@ -67,7 +69,7 @@ class MyteVocabularyTest(absltest.TestCase):
       self.assertEqual(exp, res)
 
   def test_decode_tf_oov_tokens(self):
-    vocab = vocabularies.MyteVocabulary()
+    vocab = self.vocab
 
     # Add two ids that are outside the allowed interval. They should be ignored.
     ids = tuple(list(self.TEST_BYTE_IDS) + [3000, -4000])
@@ -76,7 +78,7 @@ class MyteVocabularyTest(absltest.TestCase):
     self.assertEqual(expected_str, _decode_tf(vocab, ids))
 
   def test_decode_tf_invalid_byte_sequence(self):
-    vocab = vocabularies.MyteVocabulary()
+    vocab = self.vocab
 
     # Add an invalid byte sequence, which should be ignored.
     ids = tuple(list(self.TEST_BYTE_IDS) + [0xC0, 0xC1])
@@ -85,7 +87,7 @@ class MyteVocabularyTest(absltest.TestCase):
     self.assertEqual(expected_str, _decode_tf(vocab, ids))
 
   def test_vocab(self):
-    vocab = vocabularies.MyteVocabulary()
+    vocab = self.vocab
     self.assertEqual(259, vocab.vocab_size)
     self.assertSequenceEqual(self.TEST_BYTE_IDS, vocab.encode(self.TEST_STRING))
     self.assertEqual(self.TEST_STRING, vocab.decode(self.TEST_BYTE_IDS))
@@ -101,7 +103,7 @@ class MyteVocabularyTest(absltest.TestCase):
     self.assertEqual("", vocab.decode([268]))
 
   def test_out_of_vocab(self):
-    vocab = vocabularies.MyteVocabulary()
+    vocab = self.vocab
     self.assertEqual(259, vocab.vocab_size)
     self.assertEqual("", vocab.decode([260]))
 
