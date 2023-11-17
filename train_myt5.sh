@@ -1,7 +1,5 @@
 # Model dir to save logs, ckpts, etc. in "gs://model_dir" format.
-BUCKET="byt5-buckrt" #
-PROJECT_ID=58194160845
-ACCOUNT=tomlim_uw_edu
+
 
 EXPERIMENT="myt5_small"
 MODEL_DIR="gs://${BUCKET}/models/${EXPERIMENT}"
