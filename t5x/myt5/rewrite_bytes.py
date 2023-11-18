@@ -92,16 +92,17 @@ class ByteRewriter:
 			in_bytes = in_bytes.to_tensor()
 		in_shape = tf.shape(in_bytes)
 		in_bytes = tf.reshape(in_bytes, [-1])
-
+		in_bytes = in_bytes.numpy()
+		
 		out_bytes = []
 		b_start = 0
 		b_end = 0
 
-		in_bytes_len = tf.shape(in_bytes)[0]
+		in_bytes_len = len(in_bytes)
 		while b_start < in_bytes_len:
 			tree_pointer = self.hash_tree if not reverse else self.reverse_hash_tree
 			for j in range(b_start, in_bytes_len):
-				b = int(in_bytes[j])
+				b = in_bytes[j]
 				if b in tree_pointer:
 					tree_pointer = tree_pointer[b]
 				elif j == b_start:
