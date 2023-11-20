@@ -31,8 +31,8 @@ class MyteVocabulary(Vocabulary):
 		self._byte_size = 256
 		# The special tokens: 0=PAD, 1=EOS,and 2=UNK
 		self._num_special_tokens = 3
-		self.decompose_rewriter = ByteRewriter(DECOMPOSE_MAP_PATH)
-		self.merge_rewriter = ByteRewriter(MERGE_MAP_PATH)
+		# self.decompose_rewriter = ByteRewriter(DECOMPOSE_MAP_PATH)
+		# self.merge_rewriter = ByteRewriter(MERGE_MAP_PATH)
 
 		super().__init__(extra_ids=extra_ids)
 
@@ -113,9 +113,10 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a list of integers (not terminated by EOS)
 		"""
-		s = s.decode() if isinstance(s, bytes) else s
-		ids = self._convert_strings_to_ids(s)
-		return [i + self._num_special_tokens for i in ids]
+		raise NotImplementedError
+		# s = s.decode() if isinstance(s, bytes) else s
+		# ids = self._convert_strings_to_ids(s)
+		# return [i + self._num_special_tokens for i in ids]
 
 	def _decode(self, ids):
 		"""Decode a list of integers to a python string.
@@ -130,10 +131,11 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a string
 		"""
-		ids = [int(i) for i in ids]
-		ids = self._filter_non_string_ids(ids)
-		ids = [i - self._num_special_tokens for i in ids]
-		return self._convert_ids_to_strings(ids)
+		raise NotImplementedError
+		# ids = [int(i) for i in ids]
+		# ids = self._filter_non_string_ids(ids)
+		# ids = [i - self._num_special_tokens for i in ids]
+		# return self._convert_ids_to_strings(ids)
 
 	def _encode_tf(self, s):
 		"""Encode a tf.Scalar string to a tf.Tensor.
@@ -144,35 +146,35 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a 1d tf.Tensor with dtype tf.int32
 		"""
-		@tf.py_function(Tout=tf.int32)
-		def encode_byte_rewrite(in_bytes: tf.Tensor):
-			if isinstance(in_bytes, tf.RaggedTensor):
-				in_bytes = in_bytes.to_tensor()
-			in_shape = tf.shape(in_bytes)
-			in_bytes = tf.reshape(in_bytes, [-1])
-			bytes = in_bytes.numpy()
-
-			# 1. decomposing
-			bytes = self.decompose_rewriter.rewrite_bytes(bytes)
-			# 2. merging
-			bytes = self.merge_rewriter.rewrite_bytes(bytes)
-
-			out_bytes_len = len(bytes)
-			out_bytes = tf.constant(bytes, dtype=tf.int32)
-			desired_shape = tf.concat([in_shape[:-1], tf.constant([out_bytes_len], dtype=tf.int32)], axis=0)
-			return tf.reshape(out_bytes, desired_shape)
+		# @tf.py_function(Tout=tf.int32)
+		# def encode_byte_rewrite(in_bytes: tf.Tensor):
+		# 	if isinstance(in_bytes, tf.RaggedTensor):
+		# 		in_bytes = in_bytes.to_tensor()
+		# 	in_shape = tf.shape(in_bytes)
+		# 	in_bytes = tf.reshape(in_bytes, [-1])
+		# 	bytes = in_bytes.numpy()
+		#
+		# 	# 1. decomposing
+		# 	bytes = self.decompose_rewriter.rewrite_bytes(bytes)
+		# 	# 2. merging
+		# 	bytes = self.merge_rewriter.rewrite_bytes(bytes)
+		#
+		# 	out_bytes_len = len(bytes)
+		# 	out_bytes = tf.constant(bytes, dtype=tf.int32)
+		# 	desired_shape = tf.concat([in_shape[:-1], tf.constant([out_bytes_len], dtype=tf.int32)], axis=0)
+		# 	return tf.reshape(out_bytes, desired_shape)
 
 		ids = tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
 
-		expanded = False
-		if ids.get_shape().ndims == 1:
-			expanded = True
-			ids = tf.expand_dims(ids, axis=0)
-
-		ids = tf.map_fn(encode_byte_rewrite, ids, dtype=tf.int32, fn_output_signature=tf.int32, parallel_iterations=32)
-
-		if expanded:
-			ids = tf.squeeze(ids, axis=0)
+		# expanded = False
+		# if ids.get_shape().ndims == 1:
+		# 	expanded = True
+		# 	ids = tf.expand_dims(ids, axis=0)
+		#
+		# ids = tf.map_fn(encode_byte_rewrite, ids, dtype=tf.int32, fn_output_signature=tf.int32, parallel_iterations=32)
+		#
+		# if expanded:
+		# 	ids = tf.squeeze(ids, axis=0)
 		return ids + self._num_special_tokens
 
 	def _decode_tf(self, ids):
@@ -185,23 +187,23 @@ class MyteVocabulary(Vocabulary):
 		  a n-d tf.Tensor with dtype :string
 		"""
 
-		@tf.py_function(Tout=tf.int32)
-		def decode_byte_rewrite(in_bytes: tf.Tensor):
-			if isinstance(in_bytes, tf.RaggedTensor):
-				in_bytes = in_bytes.to_tensor()
-			in_shape = tf.shape(in_bytes)
-			in_bytes = tf.reshape(in_bytes, [-1])
-			bytes = in_bytes.numpy()
-
-			# 1. demerging
-			bytes = self.merge_rewriter.rewrite_bytes(bytes, reverse=True)
-			# 2. dedecomposing
-			bytes = self.decompose_rewriter.rewrite_bytes(bytes, reverse=True)
-
-			out_bytes_len = len(bytes)
-			out_bytes = tf.constant(bytes, dtype=tf.int32)
-			desired_shape = tf.concat([in_shape[:-1], tf.constant([out_bytes_len], dtype=tf.int32)], axis=0)
-			return tf.reshape(out_bytes, desired_shape)
+		# @tf.py_function(Tout=tf.int32)
+		# def decode_byte_rewrite(in_bytes: tf.Tensor):
+		# 	if isinstance(in_bytes, tf.RaggedTensor):
+		# 		in_bytes = in_bytes.to_tensor()
+		# 	in_shape = tf.shape(in_bytes)
+		# 	in_bytes = tf.reshape(in_bytes, [-1])
+		# 	bytes = in_bytes.numpy()
+		#
+		# 	# 1. demerging
+		# 	bytes = self.merge_rewriter.rewrite_bytes(bytes, reverse=True)
+		# 	# 2. dedecomposing
+		# 	bytes = self.decompose_rewriter.rewrite_bytes(bytes, reverse=True)
+		#
+		# 	out_bytes_len = len(bytes)
+		# 	out_bytes = tf.constant(bytes, dtype=tf.int32)
+		# 	desired_shape = tf.concat([in_shape[:-1], tf.constant([out_bytes_len], dtype=tf.int32)], axis=0)
+		# 	return tf.reshape(out_bytes, desired_shape)
 
 
 		lower_bound = self._num_special_tokens
@@ -215,23 +217,18 @@ class MyteVocabulary(Vocabulary):
 		)
 		ids = ids - self._num_special_tokens
 
-		expanded = False
-		if ids.get_shape().ndims == 1:
-			expanded = True
-			ids = tf.expand_dims(ids, axis=0)
-
-		ids = tf.map_fn(decode_byte_rewrite, ids, dtype=tf.int32, fn_output_signature=tf.int32, parallel_iterations=32)
-
-		if expanded:
-			ids = tf.squeeze(ids, axis=0)
+		# expanded = False
+		# if ids.get_shape().ndims == 1:
+		# 	expanded = True
+		# 	ids = tf.expand_dims(ids, axis=0)
+		#
+		# ids = tf.map_fn(decode_byte_rewrite, ids, dtype=tf.int32, fn_output_signature=tf.int32, parallel_iterations=32)
+		#
+		# if expanded:
+		# 	ids = tf.squeeze(ids, axis=0)
 
 		string = tf.strings.reduce_join(tf.gather(self._byte_strings, ids), axis=-1)
-		return tf.strings.unicode_transcode(
-			input=string,
-			input_encoding="UTF-8",
-			output_encoding="UTF-8",
-			errors="ignore",
-		)
+		return string # because of byte rewritting we are not checking for valid utf-8 strings
 
 	def __eq__(self, other):
 		if not isinstance(other, MyteVocabulary):

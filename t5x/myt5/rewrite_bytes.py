@@ -4,6 +4,7 @@ from typing import Union, Dict, Tuple, List
 import logging
 import binascii
 import tensorflow as tf
+import os
 
 def hex_to_int_seq(bline: str, sep: str = ' ') -> Tuple[int]:
 	return tuple(int(b, 16) for b in bline.split(sep))
@@ -124,3 +125,61 @@ class ByteRewriter:
 		out_bytes = tf.reshape(out_bytes, desired_shape)
 
 		return out_bytes
+
+
+BYTE_SIZE = 256
+
+
+DECOMPOSE_MAP_PATH = os.path.join(os.path.dirname(__file__), "decompose_map.json")
+MERGE_MAP_PATH = os.path.join(os.path.dirname(__file__), "merge_map.json")
+
+DECOMPOSE_REWRITER = ByteRewriter(DECOMPOSE_MAP_PATH)
+MERGE_REWRITER = ByteRewriter(MERGE_MAP_PATH )
+
+BYTE_STRINGS = tf.constant([bytes([i]) for i in range(BYTE_SIZE)])
+
+
+@tf.py_function(Tout=tf.string)
+def encode_byte_rewrite(in_string: tf.Tensor):
+
+	bytes = tf.dtypes.cast(tf.io.decode_raw(in_string, tf.uint8), tf.int32)
+	bytes = bytes.numpy()
+	# 1. decomposing
+	bytes = DECOMPOSE_REWRITER.rewrite_bytes(bytes)
+	# 2. merging
+	bytes = MERGE_REWRITER.rewrite_bytes(bytes)
+
+	bytes = tf.constant(bytes, tf.int32)
+	out_string = tf.strings.reduce_join(tf.gather(BYTE_STRINGS, bytes), axis=-1)
+	return out_string
+
+
+@tf.py_function(Tout=tf.string)
+def decode_byte_rewrite(in_string: tf.Tensor):
+
+	bytes = tf.dtypes.cast(tf.io.decode_raw(in_string, tf.uint8), tf.int32)
+	bytes = bytes.numpy()
+	# 1. demerging
+	bytes = MERGE_REWRITER.rewrite_bytes(bytes, reverse=True)
+	# 2. dedecomposing
+	bytes = DECOMPOSE_REWRITER.rewrite_bytes(bytes, reverse=True)
+
+	bytes = tf.constant(bytes, tf.int32)
+	out_string = tf.strings.reduce_join(tf.gather(BYTE_STRINGS, bytes), axis=-1)
+	return out_string
+
+
+def preprocess_rewrite(
+		dataset: tf.data.Dataset
+	) -> tf.data.Dataset:
+	"""
+
+	  Args:
+	    dataset: a tf.data.Dataset of examples to tokenize.
+
+
+	  Returns:
+	    a tf.data.Dataset
+	"""
+	return dataset.map(lambda x: {"inputs": x["inputs"], "targets": encode_byte_rewrite(x["targets"])},
+	                   num_parallel_calls=tf.data.AUTOTUNE)
