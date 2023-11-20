@@ -25,7 +25,7 @@ import seqio
 import t5.data
 import t5.data.tasks
 import tensorflow_datasets as tfds
-from t5x.myt5.vocabularies import MyteVocabulary
+# from t5x.myt5.vocabularies import MyteVocabulary
 from t5x.myt5.rewrite_bytes import preprocess_rewrite
 
 
@@ -41,8 +41,8 @@ DEFAULT_PREPROCESSORS = [
 ]
 
 DEFAULT_BYTE_OUTPUT_FEATURES = {
-    "inputs": t5.data.Feature(vocabulary=MyteVocabulary()),
-    "targets": t5.data.Feature(vocabulary=MyteVocabulary())
+    "inputs": t5.data.Feature(vocabulary=t5.data.ByteVocabulary()),
+    "targets": t5.data.Feature(vocabulary=t5.data.ByteVocabulary())
 }
 
 FEATURE_MAP = {

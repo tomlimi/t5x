@@ -19,7 +19,7 @@ DROPOUT_RATE = %gin.REQUIRED
 
 # Vocabulary (shared by encoder and decoder)
 # TODO: change with byte rewriting
-VOCABULARY = @vocabularies.MyteVocabulary()
+VOCABULARY = @seqio.ByteVocabulary()
 
 # ------------------- Optimizer ------------------------------------------------
 # `learning_rate` is set by `Trainer.learning_rate_fn`.
