@@ -9,9 +9,16 @@ import os
 def hex_to_int_seq(bline: str, sep: str = ' ') -> Tuple[int]:
 	return tuple(int(b, 16) for b in bline.split(sep))
 
-class ByteRewriter:
+class ByteRewriterTF:
 
 	LEAF ='[LEAF]'
+
+	BYTE_SIZE = 256
+
+	LEAF_VAL = -100
+	LEAF_VAL_CONSTANT = tf.constant(LEAF_VAL)
+	DEFAULT_CONSTANT = tf.constant(-1)
+	FALSE_VALUE_CONSTANT = tf.constant(0)
 
 	def __init__(self, rewriting_rules: Union[str, Dict[str, str]]):
 
@@ -20,166 +27,179 @@ class ByteRewriter:
 				rewriting_rules = json.load(f)
 		elif not type(rewriting_rules) == dict:
 			raise ValueError(f"rewriting_rules should be either a path to json file or a dict, got {type(rewriting_rules)}")
+		self.input_ouput_idx_map, self.output_lookup, self.subinput_is_terminal_map = self.prepare_tf_support(
+			rewriting_rules)
+		reverse_rewriting_rules = {v: k for k, v in rewriting_rules.items()}
+		self.rev_input_ouput_idx_map, self.rev_output_lookup, self.rev_subinput_is_terminal_map = self.prepare_tf_support(
+			reverse_rewriting_rules)
 
-		self.hash_tree = self.construct_hash_tree(rewriting_rules)
-		reverse_rewriting_rules = {v:k for k,v in rewriting_rules.items()}
-		self.reverse_hash_tree = self.construct_hash_tree(reverse_rewriting_rules)
 
-	def add_leaf(self,hash_tree, byte_in_sequence, byte_out_sequence):
+	@classmethod
+	def tf_dict(cls, keys: tf.Tensor, values: tf.Tensor) -> tf.lookup.StaticHashTable:
+		return tf.lookup.StaticHashTable(
+			tf.lookup.KeyValueTensorInitializer(keys, values),
+			default_value=cls.DEFAULT_CONSTANT,
+		)
 
-		byte_in_list = hex_to_int_seq(byte_in_sequence, ' ')
-		byte_out_list = hex_to_int_seq(byte_out_sequence, ' ')
 
-		tree_pointer = hash_tree
-		for b in byte_in_list:
-			if b not in tree_pointer:
-				tree_pointer[b] = {}
-			tree_pointer = tree_pointer[b]
+	@property
+	def _byte_strings(self):
+		return tf.constant([bytes([i]) for i in range(self.BYTE_SIZE)])
 
-		tree_pointer[self.LEAF] = byte_out_list
 
-	def construct_hash_tree(self, rewriting_rules):
+	def prepare_tf_support(self, rewriting_rules: Dict[str,str]) -> Tuple[tf.lookup.StaticHashTable, tf.RaggedTensor, tf.lookup.StaticHashTable]:
+		# The followint method return three objects:
+		# 1. input_ouput_idx_map: tf.lookup.StaticHashTable that maps input byte sequences to their output byte ids
+		# 2. output_lookup: tf.RaggedTensor maps output byte ids to output byte sequence tensor
+		# 3. subinput_is_terminal_map: tf.lookup.StaticHashTable that maps input byte sequences to a boolean tf constant that indicates if the input sequence is a terminal sequence (i.e. not a prefix of any other sequence)
 
-		hash_tree = defaultdict(dict)
-		for b in range(256):
-			hash_tree[b][self.LEAF] = [b]
+		# start
+
+		keys_input_sequences = [tf.constant([i], dtype=tf.int32) for i in range(self.BYTE_SIZE) if f"{i:02x}" not in rewriting_rules]
+		values_output_sequences = [tf.constant([i], dtype=tf.int32) for i in range(self.BYTE_SIZE) if f"{i:02x}" not in rewriting_rules]
+
+		# every one-byte sequence may be terminal
+		terminal_subsequence_dict = {(i,): True for i in range(self.BYTE_SIZE) if f"{i:02x}" not in rewriting_rules}
 
 		for in_sequence, out_sequence in rewriting_rules.items():
-			self.add_leaf(hash_tree, in_sequence, out_sequence)
+			in_sequence_tuple = hex_to_int_seq(in_sequence, ' ')
+			keys_input_sequences.append(tf.constant(in_sequence_tuple, dtype=tf.int32))
+			values_output_sequences.append(tf.constant(hex_to_int_seq(out_sequence, ' '), dtype=tf.int32))
 
-		return hash_tree
+			for substr_i in range(len(in_sequence_tuple)):
+				terminal_subsequence_dict[in_sequence_tuple[:substr_i]] = False
+			if in_sequence not in terminal_subsequence_dict:
+				terminal_subsequence_dict[in_sequence_tuple] = True
 
-	def search_hash_tree(self, byte_sequence):
+		keys_input_sequences = tf.ragged.stack(keys_input_sequences)
 
-		tree_pointer = self.hash_tree
-		for b in byte_sequence:
-			if b in tree_pointer:
-				tree_pointer = tree_pointer[b]
-			else:
-				return None
+		keys_input_sequences = tf.strings.reduce_join(tf.gather(self._byte_strings, keys_input_sequences), axis=-1)
+		# save dictionary in tf lookup format
+		input_ouput_idx_map = self.tf_dict(keys_input_sequences,
+		                                   tf.constant(tf.range(len(keys_input_sequences), dtype=tf.int32)))
 
-		return tree_pointer[self.LEAF]
+		output_lookup = tf.ragged.stack(values_output_sequences)
 
-	def rewrite_bytes(self, in_bytes: List[int], reverse=False) -> List[int]:
+		keys_input_subsequences = tf.ragged.stack([tf.constant(subseq, dtype=tf.int32) for subseq in terminal_subsequence_dict.keys()])
+		keys_input_subsequences = tf.strings.reduce_join(tf.gather(self._byte_strings, keys_input_subsequences), axis=-1)
 
-		out_bytes = []
-		b_start = 0
-		b_end = 0
+		subinput_is_terminal_map = self.tf_dict(tf.stack(keys_input_subsequences, axis=0),
+		                                        tf.constant(list(terminal_subsequence_dict.values()), dtype=tf.int32))
 
-		while b_start < len(in_bytes):
-			tree_pointer = self.hash_tree if not reverse else self.reverse_hash_tree
-			for j in range(b_start, len(in_bytes)):
-				b = in_bytes[j]
-				if b in tree_pointer:
-					tree_pointer = tree_pointer[b]
-				elif j == b_start:
-					logging.warning(f"Unrecognized byte {b} in {in_bytes}, Skipping!")
-					cur_leaf = [b]
-					b_end = j
-					break
-				else:
-					break
-				if self.LEAF in tree_pointer:
-					cur_leaf = tree_pointer[self.LEAF]
-					b_end = j
-			out_bytes.extend(cur_leaf)
-			b_start = b_end + 1
+		return input_ouput_idx_map, output_lookup, subinput_is_terminal_map
 
-		return out_bytes
+	def rewrite_bytes_tf(self, in_bytes: tf.Tensor) -> tf.Tensor:
+		# rewrite bytes in tensorflow tensor
+		# in_bytes_tf: tf.Tensor of shape (seq_len)
+		# reverse: tf.Tensor bool, if True, apply reverse rewriting rules
+		# return: tf.Tensor of shape (rewritten_seq_len)
 
-	def rewrite_bytes_tf(self, in_bytes: tf.Tensor, reverse=False) -> List[int]:
-		# We want to return the tensor with the same dimensionality as before
-		if isinstance(in_bytes, tf.RaggedTensor):
-			in_bytes = in_bytes.to_tensor()
-		in_shape = tf.shape(in_bytes)
-		in_bytes = tf.reshape(in_bytes, [-1])
-		in_bytes = in_bytes.numpy()
-		
-		out_bytes = []
-		b_start = 0
-		b_end = 0
+		b_start = tf.constant(0, dtype=tf.int32)
+		b_end = tf.constant(1, dtype=tf.int32)
+		in_bytes_len = tf.shape(in_bytes)[0]
+		output_bytes = tf.zeros([0], dtype=tf.int32)
 
-		in_bytes_len = len(in_bytes)
-		while b_start < in_bytes_len:
-			tree_pointer = self.hash_tree if not reverse else self.reverse_hash_tree
-			for j in range(b_start, in_bytes_len):
-				b = in_bytes[j]
-				if b in tree_pointer:
-					tree_pointer = tree_pointer[b]
-				elif j == b_start:
-					logging.warning(f"Unrecognized byte {b} in {in_bytes}, Skipping!")
-					cur_leaf = [b]
-					b_end = j
-					break
-				else:
-					break
-				if self.LEAF in tree_pointer:
-					cur_leaf = tree_pointer[self.LEAF]
-					b_end = j
-			out_bytes.extend(cur_leaf)
-			b_start = b_end + 1
+		input_ouput_idx_map, output_lookup, subinput_is_terminal_map = \
+			self.input_ouput_idx_map, self.output_lookup, self.subinput_is_terminal_map
 
-		out_bytes_len = len(out_bytes)
-		out_bytes = tf.constant(out_bytes, dtype=tf.int32)
-		desired_shape = tf.concat([in_shape[:-1], tf.constant([out_bytes_len], dtype=tf.int32)], axis=0)
-		out_bytes = tf.reshape(out_bytes, desired_shape)
+		def inner_loop_condition(b_start, b_end, b_valid_end, cur_output_idx, keep_searching):
+			not_reached_end = tf.less_equal(b_end, in_bytes_len)
+			return tf.logical_and(not_reached_end, keep_searching)
 
-		return out_bytes
+		def inner_loop(b_start, b_end, b_valid_end, cur_output_idx, keep_searching):
+			subinput = tf.slice(in_bytes, [b_start], [b_end - b_start])
+			subinput_str = tf.strings.reduce_join(tf.gather(self._byte_strings, subinput), axis=-1)
 
+			cur_output_idx, b_valid_end = tf.cond(tf.not_equal(input_ouput_idx_map[subinput_str], self.DEFAULT_CONSTANT),
+			                         lambda: (input_ouput_idx_map[subinput_str], b_end), # subinput is valid key, we save its index
+			                         lambda: (cur_output_idx, b_valid_end))
 
-BYTE_SIZE = 256
+			keep_searching = tf.cond(tf.equal(subinput_is_terminal_map[subinput_str], self.FALSE_VALUE_CONSTANT),
+			                          lambda: tf.constant(True),
+			                          lambda: tf.constant(False)) # subinput is not prefix of any longer codepoint. We break.
 
+			return b_start, b_end + 1, b_valid_end, cur_output_idx, keep_searching
 
-DECOMPOSE_MAP_PATH = os.path.join(os.path.dirname(__file__), "decompose_map.json")
-MERGE_MAP_PATH = os.path.join(os.path.dirname(__file__), "merge_map.json")
+		def outer_condition(b_start, b_end, output_bytes):
+			return tf.less(b_start, in_bytes_len)
 
-DECOMPOSE_REWRITER = ByteRewriter(DECOMPOSE_MAP_PATH)
-MERGE_REWRITER = ByteRewriter(MERGE_MAP_PATH )
+		def outer_loop(b_start, b_end, output_bytes):
 
-BYTE_STRINGS = tf.constant([bytes([i]) for i in range(BYTE_SIZE)])
+			cur_output_idx = self.DEFAULT_CONSTANT
+			keep_searching = tf.constant(True)
+			b_valid_end = b_end
+			b_start, b_end, b_valid_end, cur_output_idx, keep_searching = tf.while_loop(inner_loop_condition, inner_loop,
+			                                                               [b_start, b_end,b_valid_end, cur_output_idx, keep_searching])
 
+			cur_output, b_end = tf.cond(tf.logical_or(tf.equal(cur_output_idx, self.DEFAULT_CONSTANT), keep_searching),
+			                     lambda: (tf.slice(in_bytes, [b_start], [b_end - 1 - b_start]), b_end), # unowne codepoint, rewritting from input
+			                     lambda: (output_lookup[cur_output_idx], b_valid_end + 1)) # adding codepoint supported by maping
 
-@tf.py_function(Tout=tf.string)
-def encode_byte_rewrite(in_string: tf.Tensor):
+			output_bytes = tf.concat([output_bytes, cur_output], axis=0)
+			b_start = b_end - 1
 
-	bytes = tf.dtypes.cast(tf.io.decode_raw(in_string, tf.uint8), tf.int32)
-	bytes = bytes.numpy()
-	# 1. decomposing
-	bytes = DECOMPOSE_REWRITER.rewrite_bytes(bytes)
-	# 2. merging
-	bytes = MERGE_REWRITER.rewrite_bytes(bytes)
+			return b_start, b_end, output_bytes
 
-	bytes = tf.constant(bytes, tf.int32)
-	out_string = tf.strings.reduce_join(tf.gather(BYTE_STRINGS, bytes), axis=-1)
-	return out_string
+		b_start, b_end, output_bytes = tf.while_loop(outer_condition, outer_loop, [b_start, b_end, output_bytes],
+		                                             shape_invariants=[tf.TensorShape([]),
+		                                                               tf.TensorShape([]),
+		                                                               tf.TensorShape([None])])
+		return output_bytes
 
+	def rewrite_bytes_tf_reverse(self, in_bytes: tf.Tensor) -> tf.Tensor:
+		# rewrite bytes in tensorflow tensor
+		# in_bytes_tf: tf.Tensor of shape (seq_len)
+		# reverse: tf.Tensor bool, if True, apply reverse rewriting rules
+		# return: tf.Tensor of shape (rewritten_seq_len)
 
-@tf.py_function(Tout=tf.string)
-def decode_byte_rewrite(in_string: tf.Tensor):
+		b_start = tf.constant(0, dtype=tf.int32)
+		b_end = tf.constant(1, dtype=tf.int32)
+		in_bytes_len = tf.shape(in_bytes)[0]
+		output_bytes = tf.zeros([0], dtype=tf.int32)
 
-	bytes = tf.dtypes.cast(tf.io.decode_raw(in_string, tf.uint8), tf.int32)
-	bytes = bytes.numpy()
-	# 1. demerging
-	bytes = MERGE_REWRITER.rewrite_bytes(bytes, reverse=True)
-	# 2. dedecomposing
-	bytes = DECOMPOSE_REWRITER.rewrite_bytes(bytes, reverse=True)
+		input_ouput_idx_map, output_lookup, subinput_is_terminal_map = \
+			self.rev_input_ouput_idx_map, self.rev_output_lookup, self.rev_subinput_is_terminal_map
 
-	bytes = tf.constant(bytes, tf.int32)
-	out_string = tf.strings.reduce_join(tf.gather(BYTE_STRINGS, bytes), axis=-1)
-	return out_string
+		def inner_loop_condition(b_start, b_end, b_valid_end, cur_output_idx, keep_searching):
+			not_reached_end = tf.less_equal(b_end, in_bytes_len)
+			return tf.logical_and(not_reached_end, keep_searching)
 
+		def inner_loop(b_start, b_end, b_valid_end, cur_output_idx, keep_searching):
+			subinput = tf.slice(in_bytes, [b_start], [b_end - b_start])
+			subinput_str = tf.strings.reduce_join(tf.gather(self._byte_strings, subinput), axis=-1)
 
-def preprocess_rewrite(
-		dataset: tf.data.Dataset
-	) -> tf.data.Dataset:
-	"""
+			cur_output_idx, b_valid_end = tf.cond(tf.not_equal(input_ouput_idx_map[subinput_str], self.DEFAULT_CONSTANT),
+			                         lambda: (input_ouput_idx_map[subinput_str], b_end), # subinput is valid key, we save its index
+			                         lambda: (cur_output_idx, b_valid_end))
 
-	  Args:
-	    dataset: a tf.data.Dataset of examples to tokenize.
+			keep_searching = tf.cond(tf.equal(subinput_is_terminal_map[subinput_str], self.FALSE_VALUE_CONSTANT),
+			                          lambda: tf.constant(True),
+			                          lambda: tf.constant(False)) # subinput is not prefix of any longer codepoint. We break.
 
+			return b_start, b_end + 1, b_valid_end, cur_output_idx, keep_searching
 
-	  Returns:
-	    a tf.data.Dataset
-	"""
-	return dataset.map(lambda x: {"inputs": x["inputs"], "targets": encode_byte_rewrite(x["targets"])},
-	                   num_parallel_calls=tf.data.AUTOTUNE)
+		def outer_condition(b_start, b_end, output_bytes):
+			return tf.less(b_start, in_bytes_len)
+
+		def outer_loop(b_start, b_end, output_bytes):
+
+			cur_output_idx = self.DEFAULT_CONSTANT
+			keep_searching = tf.constant(True)
+			b_valid_end = b_end
+			b_start, b_end, b_valid_end, cur_output_idx, keep_searching = tf.while_loop(inner_loop_condition, inner_loop,
+			                                                               [b_start, b_end,b_valid_end, cur_output_idx, keep_searching])
+
+			cur_output, b_end = tf.cond(tf.logical_or(tf.equal(cur_output_idx, self.DEFAULT_CONSTANT), keep_searching),
+			                     lambda: (tf.slice(in_bytes, [b_start], [b_end - 1 - b_start]), b_end), # unowne codepoint, rewritting from input
+			                     lambda: (output_lookup[cur_output_idx], b_valid_end + 1)) # adding codepoint supported by maping
+
+			output_bytes = tf.concat([output_bytes, cur_output], axis=0)
+			b_start = b_end - 1
+
+			return b_start, b_end, output_bytes
+
+		b_start, b_end, output_bytes = tf.while_loop(outer_condition, outer_loop, [b_start, b_end, output_bytes],
+		                                             shape_invariants=[tf.TensorShape([]),
+		                                                               tf.TensorShape([]),
+		                                                               tf.TensorShape([None])])
+		return output_bytes

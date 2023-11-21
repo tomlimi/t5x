@@ -25,8 +25,7 @@ import seqio
 import t5.data
 import t5.data.tasks
 import tensorflow_datasets as tfds
-# from t5x.myt5.vocabularies import MyteVocabulary
-from t5x.myt5.rewrite_bytes import preprocess_rewrite
+from t5x.myt5.vocabularies import MyteVocabulary
 
 
 MEAN_NOISE_SPAN_LENGTH = 20
@@ -41,8 +40,8 @@ DEFAULT_PREPROCESSORS = [
 ]
 
 DEFAULT_BYTE_OUTPUT_FEATURES = {
-    "inputs": t5.data.Feature(vocabulary=t5.data.ByteVocabulary()),
-    "targets": t5.data.Feature(vocabulary=t5.data.ByteVocabulary())
+    "inputs": t5.data.Feature(vocabulary=MyteVocabulary()),
+    "targets": t5.data.Feature(vocabulary=MyteVocabulary())
 }
 
 FEATURE_MAP = {
@@ -69,7 +68,6 @@ for lang in MC4_LANGS:
                   "inputs": None,
                   "targets": "text"
               }),
-          preprocess_rewrite,
           seqio.preprocessors.tokenize,
           seqio.CacheDatasetPlaceholder(),
           functools.partial(t5.data.preprocessors.span_corruption,
