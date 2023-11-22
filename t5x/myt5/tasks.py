@@ -26,6 +26,7 @@ import t5.data
 import t5.data.tasks
 import tensorflow_datasets as tfds
 from t5x.myt5.vocabularies import MyteVocabulary
+from t5x.myt5.rewrite_bytes import preprocess_rewrite
 
 
 MEAN_NOISE_SPAN_LENGTH = 20
@@ -68,6 +69,7 @@ for lang in MC4_LANGS:
                   "inputs": None,
                   "targets": "text"
               }),
+          preprocess_rewrite,
           seqio.preprocessors.tokenize,
           seqio.CacheDatasetPlaceholder(),
           functools.partial(t5.data.preprocessors.span_corruption,
