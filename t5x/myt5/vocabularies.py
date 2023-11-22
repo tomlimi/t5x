@@ -9,6 +9,12 @@ DECOMPOSE_MAP_PATH = os.path.join(os.path.dirname(__file__), "decompose_map.json
 MERGE_MAP_PATH = os.path.join(os.path.dirname(__file__), "merge_map.json")
 
 
+# resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='')
+# tf.config.experimental_connect_to_cluster(resolver)
+# tf.tpu.experimental.initialize_tpu_system(resolver)
+# strategy = tf.distribute.experimental.TPUStrategy(resolver)
+
+
 class MyteVocabulary(Vocabulary):
 	"""Morphological Byte vocabulary.
 
@@ -150,32 +156,45 @@ class MyteVocabulary(Vocabulary):
 		  a 1d tf.Tensor with dtype tf.int32
 		"""
 
-		@tf.function
-		def encode_byte_rewrite(in_bytes: tf.Tensor):
-			if isinstance(in_bytes, tf.RaggedTensor):
-				in_bytes = in_bytes.to_tensor()
-			in_shape = tf.shape(in_bytes)
-			bytes = tf.reshape(in_bytes, [-1])
-
-			# 1. decomposing
-			bytes = self.decompose_rewriter.rewrite_bytes_tf(bytes)
-			# 2. merging
-			bytes = self.merge_rewriter.rewrite_bytes_tf(bytes)
-
-			desired_shape = tf.concat([in_shape[:-1], tf.constant([-1])], axis=0)
-			return tf.reshape(bytes, desired_shape)
-
+		# @tf.function
+		# def encode_byte_rewrite(in_bytes: tf.Tensor):
+		# 	if isinstance(in_bytes, tf.RaggedTensor):
+		# 		in_bytes = in_bytes.to_tensor()
+		# 	in_shape = tf.shape(in_bytes)
+		# 	bytes = tf.reshape(in_bytes, [-1])
+		#
+		# 	# 1. decomposing
+		# 	bytes = self.decompose_rewriter.rewrite_bytes_tf(bytes)
+		# 	# 2. merging
+		# 	bytes = self.merge_rewriter.rewrite_bytes_tf(bytes)
+		#
+		# 	desired_shape = tf.concat([in_shape[:-1], tf.constant([-1])], axis=0)
+		# 	return tf.reshape(bytes, desired_shape)
+		#
 		ids = tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
 
-		expanded = False
-		if ids.get_shape().ndims == 1:
-			expanded = True
-			ids = tf.expand_dims(ids, axis=0)
+		# expanded = False
+		# if ids.get_shape().ndims == 1:
+		# 	expanded = True
+		# 	ids = tf.expand_dims(ids, axis=0)
 
-		ids = tf.map_fn(encode_byte_rewrite, ids, dtype=tf.int32, fn_output_signature=tf.int32, parallel_iterations=256)
+		if isinstance(ids, tf.RaggedTensor):
+			ids = ids.to_tensor()
+		in_shape = tf.shape(ids)
+		ids = tf.reshape(ids, [-1])
 
-		if expanded:
-			ids = tf.squeeze(ids, axis=0)
+		# 1. decomposing
+		ids = self.decompose_rewriter.rewrite_bytes_tf(ids)
+		# 2. merging
+		ids = self.merge_rewriter.rewrite_bytes_tf(ids)
+
+		desired_shape = tf.concat([in_shape[:-1], tf.constant([-1])], axis=0)
+		ids = tf.reshape(ids, desired_shape)
+
+		# ids = tf.map_fn(encode_byte_rewrite, ids, dtype=tf.int32, fn_output_signature=tf.int32, parallel_iterations=256)
+		#
+		# if expanded:
+		# 	ids = tf.squeeze(ids, axis=0)
 		return ids + self._num_special_tokens
 
 	def _decode_tf(self, ids):
@@ -187,20 +206,20 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a n-d tf.Tensor with dtype :string
 		"""
-		@tf.function
-		def decode_byte_rewrite(in_bytes: tf.Tensor):
-			if isinstance(in_bytes, tf.RaggedTensor):
-				in_bytes = in_bytes.to_tensor()
-			in_shape = tf.shape(in_bytes)
-			bytes = tf.reshape(in_bytes, [-1])
-
-			# 1. demerging
-			bytes = self.merge_rewriter.rewrite_bytes_tf_reverse(bytes)
-			# 2. dedecomposing
-			bytes = self.decompose_rewriter.rewrite_bytes_tf_reverse(bytes)
-
-			desired_shape = tf.concat([in_shape[:-1], tf.constant([-1])], axis=0)
-			return tf.reshape(bytes, desired_shape)
+		# @tf.function
+		# def decode_byte_rewrite(in_bytes: tf.Tensor):
+		# 	if isinstance(in_bytes, tf.RaggedTensor):
+		# 		in_bytes = in_bytes.to_tensor()
+		# 	in_shape = tf.shape(in_bytes)
+		# 	bytes = tf.reshape(in_bytes, [-1])
+		#
+		# 	# 1. demerging
+		# 	bytes = self.merge_rewriter.rewrite_bytes_tf_reverse(bytes)
+		# 	# 2. dedecomposing
+		# 	bytes = self.decompose_rewriter.rewrite_bytes_tf_reverse(bytes)
+		#
+		# 	desired_shape = tf.concat([in_shape[:-1], tf.constant([-1])], axis=0)
+		# 	return tf.reshape(bytes, desired_shape)
 
 
 		lower_bound = self._num_special_tokens
@@ -214,16 +233,29 @@ class MyteVocabulary(Vocabulary):
 		)
 		ids = ids - self._num_special_tokens
 
-		expanded = False
-		if ids.get_shape().ndims == 1:
-			expanded = True
-			ids = tf.expand_dims(ids, axis=0)
+		if isinstance(ids, tf.RaggedTensor):
+			ids = ids.to_tensor()
+		in_shape = tf.shape(ids)
+		ids = tf.reshape(ids, [-1])
 
-		ids = tf.map_fn(decode_byte_rewrite, ids, dtype=tf.int32,
-		                           fn_output_signature=tf.int32, parallel_iterations=256)
+		# 1. demerging
+		ids = self.merge_rewriter.rewrite_bytes_tf_reverse(ids)
+		# 2. dedecomposing
+		ids = self.decompose_rewriter.rewrite_bytes_tf_reverse(ids)
 
-		if expanded:
-			ids = tf.squeeze(ids, axis=0)
+		desired_shape = tf.concat([in_shape[:-1], tf.constant([-1])], axis=0)
+		ids = tf.reshape(ids, desired_shape)
+
+		# expanded = False
+		# if ids.get_shape().ndims == 1:
+		# 	expanded = True
+		# 	ids = tf.expand_dims(ids, axis=0)
+		#
+		# ids = tf.map_fn(decode_byte_rewrite, ids, dtype=tf.int32,
+		#                            fn_output_signature=tf.int32, parallel_iterations=256)
+		#
+		# if expanded:
+		# 	ids = tf.squeeze(ids, axis=0)
 
 		string = tf.strings.reduce_join(tf.gather(self._byte_strings, ids), axis=-1)
 		return tf.strings.unicode_transcode(
