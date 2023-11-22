@@ -48,7 +48,7 @@ FEATURE_MAP = {
     "myt5": DEFAULT_BYTE_OUTPUT_FEATURES,
 }
 
-MC4_LANGS = tfds.text.c4.MC4_LANGUAGES
+MC4_LANGS = ['az', 'be', 'sr', 'yi']
 
 # =========================== Pretraining Tasks/Mixtures =======================
 # mC4
