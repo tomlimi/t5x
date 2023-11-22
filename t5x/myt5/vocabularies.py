@@ -117,6 +117,36 @@ class MyteVocabulary(Vocabulary):
 
 			return b_start, b_end + 1, b_valid_end, cur_output_idx, keep_searching
 
+		def outer_condition(b_start, b_end, output_bytes):
+			return tf.less(b_start, in_bytes_len)
+
+		def outer_loop(b_start, b_end, output_bytes):
+			cur_output_idx = self.DEFAULT_CONSTANT
+			keep_searching = tf.constant(True)
+			b_valid_end = b_end
+			b_start, b_end, b_valid_end, cur_output_idx, keep_searching = tf.while_loop(inner_loop_condition,
+			                                                                            inner_loop,
+			                                                                            [b_start, b_end, b_valid_end,
+			                                                                             cur_output_idx,
+			                                                                             keep_searching])
+
+			cur_output, b_end = tf.cond(tf.logical_or(tf.equal(cur_output_idx, self.DEFAULT_CONSTANT), keep_searching),
+			                            lambda: (tf.slice(in_bytes, [b_start], [b_end - 1 - b_start]), b_end),
+			                            # unowne codepoint, rewritting from input
+			                            lambda: (output_lookup[cur_output_idx],
+			                                     b_valid_end + 1))  # adding codepoint supported by maping
+
+			output_bytes = tf.concat([output_bytes, cur_output], axis=0)
+			b_start = b_end - 1
+
+			return b_start, b_end, output_bytes
+
+		b_start, b_end, output_bytes = tf.while_loop(outer_condition, outer_loop, [b_start, b_end, output_bytes],
+		                                             shape_invariants=[tf.TensorShape([]),
+		                                                               tf.TensorShape([]),
+		                                                               tf.TensorShape([None])])
+		return output_bytes
+
 	def _encode(self, s):
 		raise NotImplementedError
 
