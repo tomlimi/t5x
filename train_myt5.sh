@@ -9,5 +9,6 @@ TFDS_DATA_DIR="gs://${BUCKET}/data"
 python3 ${T5X_DIR}/t5x/train.py \
   --gin_file="${T5X_DIR}/t5x/examples/pretrain_myt5_mc4.gin" \
   --gin.MODEL_DIR="'${MODEL_DIR}'" \
+  --gin.train.concurrent_metrics=False \
   --tfds_data_dir=${TFDS_DATA_DIR} \
   --alsologtostderr
