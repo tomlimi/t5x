@@ -47,7 +47,8 @@ DEFAULT_BYTE_OUTPUT_FEATURES = {
 FEATURE_MAP = {
     "myt5": DEFAULT_BYTE_OUTPUT_FEATURES,
 }
-
+# for testing
+# MC4_LANGS = ["yi"]
 MC4_LANGS = tfds.text.c4.MC4_LANGUAGES
 
 # =========================== Pretraining Tasks/Mixtures =======================

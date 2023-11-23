@@ -41,9 +41,11 @@ class MyteVocabulary(Vocabulary):
 		# The special tokens: 0=PAD, 1=EOS,and 2=UNK
 		self._num_special_tokens = 3
 
+		# for testing
+		#self.decompose_forward = self.merge_forward = self.merge_reverse = self.decompose_reverse = self.mock_up_tf_rewriting()
+
 		self.decompose_forward = self.load_tf_rewriting(os.path.join(os.path.dirname(__file__), "decompose_forward"))
 		self.merge_forward = self.load_tf_rewriting(os.path.join(os.path.dirname(__file__), "merge_forward"))
-
 		self.merge_reverse = self.load_tf_rewriting(os.path.join(os.path.dirname(__file__), "merge_reverse"))
 		self.decompose_reverse = self.load_tf_rewriting(os.path.join(os.path.dirname(__file__), "decompose_reverse"))
 		super().__init__(extra_ids=extra_ids)
@@ -194,20 +196,27 @@ class MyteVocabulary(Vocabulary):
 		Returns:
 		  a 1d tf.Tensor with dtype tf.int32
 		"""
+		@tf.function
+		def encode(ids):
+			ids = tf.reshape(ids, [-1])
+			# 1. decompose
+			ids = self.rewrite_bytes(ids, *self.decompose_forward)
+			# 2. merge
+			ids = self.rewrite_bytes(ids, *self.merge_forward)
+			return ids
+
 		ids = tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
 
-		if isinstance(ids, tf.RaggedTensor):
-			ids = ids.to_tensor()
-		in_shape = tf.shape(ids)
-		ids = tf.reshape(ids, [-1])
+		expanded = False
+		if ids.get_shape().ndims == 1:
+			expanded = True
+			ids = tf.expand_dims(ids, axis=0)
 
-		# 1. decompose
-		ids = self.rewrite_bytes(ids, *self.decompose_forward)
-		# 2. merge
-		ids = self.rewrite_bytes(ids, *self.merge_forward)
+		ids = tf.map_fn(encode, ids, dtype=tf.int32,
+		                fn_output_signature=tf.int32, parallel_iterations=256)
 
-		desired_shape = tf.concat([in_shape[:-1], tf.constant([-1])], axis=0)
-		ids = tf.reshape(ids, desired_shape)
+		if expanded:
+			ids = tf.squeeze(ids, axis=0)
 
 		return ids + self._num_special_tokens
 
@@ -221,6 +230,15 @@ class MyteVocabulary(Vocabulary):
 		  a n-d tf.Tensor with dtype :string
 		"""
 
+		@tf.function
+		def decode(ids):
+			ids = tf.reshape(ids, [-1])
+			# 1. demerge
+			ids = self.rewrite_bytes(ids, *self.merge_reverse)
+			# 2. dedecompose
+			ids = self.rewrite_bytes(ids, *self.decompose_reverse)
+			return ids
+
 		lower_bound = self._num_special_tokens
 		upper_bound = self._byte_size + self._num_special_tokens
 		ids = tf.ragged.boolean_mask(
@@ -232,18 +250,16 @@ class MyteVocabulary(Vocabulary):
 		)
 		ids = ids - self._num_special_tokens
 
-		if isinstance(ids, tf.RaggedTensor):
-			ids = ids.to_tensor()
-		in_shape = tf.shape(ids)
-		ids = tf.reshape(ids, [-1])
+		expanded = False
+		if ids.get_shape().ndims == 1:
+			expanded = True
+			ids = tf.expand_dims(ids, axis=0)
 
-		# 1. demerge
-		ids = self.rewrite_bytes(ids, *self.merge_reverse)
-		# 2. dedecompose
-		ids = self.rewrite_bytes(ids, *self.decompose_reverse)
+		ids = tf.map_fn(decode, ids, dtype=tf.int32,
+		                fn_output_signature=tf.int32, parallel_iterations=256)
 
-		desired_shape = tf.concat([in_shape[:-1], tf.constant([-1])], axis=0)
-		ids = tf.reshape(ids, desired_shape)
+		if expanded:
+			ids = tf.squeeze(ids, axis=0)
 
 		string = tf.strings.reduce_join(tf.gather(self._byte_strings, ids), axis=-1)
 		return tf.strings.unicode_transcode(
