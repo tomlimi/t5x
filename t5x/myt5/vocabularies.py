@@ -21,13 +21,8 @@ PAD_ID = 0
 
 class MyteVocabulary(Vocabulary):
 
-  BYTE_SIZE = 256
-  HEX_TENSOR = tf.constant([f"{i:02x}" for i in range(BYTE_SIZE)], dtype=tf.string)
-  BYTE_TENSOR = tf.constant([bytes([i]) for i in range(BYTE_SIZE)], dtype=tf.string)
-  HEX_TENSOR_NO_SPACE = tf.constant([f"{i:02x}" if i != 32 else ' ' for i in range(BYTE_SIZE)], dtype=tf.string)
-
   def __init__(self,  extra_ids: int = 0):
-    self._byte_size = self.BYTE_SIZE
+    self._byte_size = 256
     # The special tokens: 0=PAD, 1=EOS,and 2=UNK
     self._num_special_tokens = 3
 
@@ -36,7 +31,7 @@ class MyteVocabulary(Vocabulary):
     self.output_tensors = {}
 
     self.wordpiece_models['decompose'], self.output_tensors['decompose'] = self.get_wpt_and_tensor(DECOMPOSE_PRE_FILE, DECOMPOSE_POST_FILE, dehexify_output=False)
-    self.wordpiece_models['merge'], self.output_tensors['merge']  = self.get_wpt_and_tensor(MERGE_PRE_FILE, MERGE_POST_FILE, dehexify_output=True)
+    self.wordpiece_models['merge'], self.output_tensors['merge'] = self.get_wpt_and_tensor(MERGE_PRE_FILE, MERGE_POST_FILE, dehexify_output=True)
 
     self.wordpiece_models['demerge'], self.output_tensors['demerge']= self.get_wpt_and_tensor(MERGE_POST_FILE, MERGE_PRE_FILE, dehexify_output=False)
     self.wordpiece_models['dedecompose'], self.output_tensors['dedecompose'] = self.get_wpt_and_tensor(DECOMPOSE_POST_DEDUP_FILE, DECOMPOSE_PRE_DEDUP_FILE, dehexify_output=True)
@@ -46,7 +41,7 @@ class MyteVocabulary(Vocabulary):
   def get_wpt_and_tensor(self, file_pre: str, file_post: str, dehexify_output: bool):
     wpt = WordpieceTokenizer(file_pre,
                                  suffix_indicator = '',
-                                 max_bytes_per_word = 100000,
+                                 max_bytes_per_word = 1000,
                                  token_out_type=tf.int32)
 
     with open(file_post, "r") as out_file:
@@ -65,6 +60,14 @@ class MyteVocabulary(Vocabulary):
   @property
   def _byte_strings(self):
     return tf.constant([bytes([i]) for i in range(self._byte_size)])
+
+  @property
+  def _hex_strings(self):
+    return tf.constant([f"{i:02x}" for i in range(self._byte_size)])
+
+  @property
+  def _hex_strings_no_space(self):
+    return tf.constant([f"{i:02x}" if i != 32 else ' ' for i in range(self._byte_size)])
 
   @property
   def bos_id(self) -> Optional[int]:
@@ -131,7 +134,7 @@ class MyteVocabulary(Vocabulary):
 
     # 0. Hexlify efficiently
     seqs = tf.dtypes.cast(tf.io.decode_raw(s, tf.uint8), tf.int32)
-    seqs = tf.strings.reduce_join(tf.gather(self.HEX_TENSOR_NO_SPACE, seqs), axis=-1)
+    seqs = tf.strings.reduce_join(tf.gather(self._hex_strings_no_space, seqs), axis=-1)
 
     # 1. decompose
     seqs = self.rewrite(seqs, "decompose")
@@ -163,7 +166,7 @@ class MyteVocabulary(Vocabulary):
     ids = ids - self._num_special_tokens
 
     # 0. Hexlify
-    seqs = tf.strings.reduce_join(tf.gather(self.HEX_TENSOR_NO_SPACE, ids), axis=-1)
+    seqs = tf.strings.reduce_join(tf.gather(self._hex_strings_no_space, ids), axis=-1)
 
     # 1. demerge
     seqs = self.rewrite(seqs, "demerge")
