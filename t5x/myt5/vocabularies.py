@@ -59,9 +59,6 @@ class MyteVocabulary(Vocabulary):
 
     return wpt, post_encoding_tensor
 
-  def rewrite_bytes_tf(self, in_bytes: tf.Tensor, reverse=False) -> List[int]:
-    pass
-
   @property
   def _byte_strings(self):
     return tf.constant([bytes([i]) for i in range(self._byte_size)])
@@ -88,8 +85,6 @@ class MyteVocabulary(Vocabulary):
     return self._num_special_tokens + self._byte_size
 
   def rewrite(self, seqs: tf.Tensor, wp: WordpieceTokenizer, out_t: tf.Tensor) -> tf.Tensor:
-
-
     seqs = tf.strings.split(seqs, sep=' ')
     seqs = wp.tokenize(seqs)
     # join tokens into words
