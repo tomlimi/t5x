@@ -30,13 +30,16 @@ class MyteVocabulary(Vocabulary):
     self._byte_size = self.BYTE_SIZE
     # The special tokens: 0=PAD, 1=EOS,and 2=UNK
     self._num_special_tokens = 3
+
     super().__init__(extra_ids=extra_ids)
+    self.wordpiece_models = {}
+    self.output_tensors = {}
 
-    self.decompose_io = self.get_wpt_and_tensor(DECOMPOSE_PRE_FILE, DECOMPOSE_POST_FILE, dehexify_output=False)
-    self.merge_io = self.get_wpt_and_tensor(MERGE_PRE_FILE, MERGE_POST_FILE, dehexify_output=False)
+    self.wordpiece_models['decompose'], self.output_tensors['decompose'] = self.get_wpt_and_tensor(DECOMPOSE_PRE_FILE, DECOMPOSE_POST_FILE, dehexify_output=False)
+    self.wordpiece_models['merge'], self.output_tensors['merge']  = self.get_wpt_and_tensor(MERGE_PRE_FILE, MERGE_POST_FILE, dehexify_output=True)
 
-    self.demerge_io = self.get_wpt_and_tensor(MERGE_POST_FILE, MERGE_PRE_FILE, dehexify_output=True)
-    self.dedecompose_io = self.get_wpt_and_tensor(DECOMPOSE_POST_DEDUP_FILE, DECOMPOSE_PRE_DEDUP_FILE, dehexify_output=True)
+    self.wordpiece_models['demerge'], self.output_tensors['demerge']= self.get_wpt_and_tensor(MERGE_POST_FILE, MERGE_PRE_FILE, dehexify_output=False)
+    self.wordpiece_models['dedecompose'], self.output_tensors['dedecompose'] = self.get_wpt_and_tensor(DECOMPOSE_POST_DEDUP_FILE, DECOMPOSE_PRE_DEDUP_FILE, dehexify_output=True)
 
 
 
@@ -84,11 +87,11 @@ class MyteVocabulary(Vocabulary):
     """
     return self._num_special_tokens + self._byte_size
 
-  def rewrite(self, seqs: tf.Tensor, wp: WordpieceTokenizer, out_t: tf.Tensor) -> tf.Tensor:
+  def rewrite(self, seqs: tf.Tensor, phase: str) -> tf.Tensor:
     seqs = tf.strings.split(seqs, sep=' ')
-    seqs = wp.tokenize(seqs)
+    seqs = self.wordpiece_models[phase].tokenize(seqs)
     # join tokens into words
-    seqs = tf.strings.reduce_join(tf.gather(out_t, seqs), axis=-1)
+    seqs = tf.strings.reduce_join(tf.gather(self.output_tensors[phase], seqs), axis=-1)
     # join words by white space into a sentence
     return tf.strings.reduce_join(seqs, axis=-1, separator=' ')
 
@@ -131,19 +134,19 @@ class MyteVocabulary(Vocabulary):
     seqs = tf.strings.reduce_join(tf.gather(self.HEX_TENSOR_NO_SPACE, seqs), axis=-1)
 
     # 1. decompose
-    seqs = self.rewrite(seqs, *self.decompose_io)
+    seqs = self.rewrite(seqs, "decompose")
     # 2. merge
-    seqs = self.rewrite(seqs, *self.merge_io)
+    seqs = self.rewrite(seqs, "merge")
     # 3. Convert to int32
     seqs = tf.dtypes.cast(tf.io.decode_raw(seqs, tf.uint8), tf.int32)
     return seqs + self._num_special_tokens
 
 
-  def _decode_tf(self, ids):
+  def _decode_tf(self, seqs):
     """Decode in TensorFlow.
 
   Args:
-    ids: a n-d tf.Tensor with dtype tf.int32
+    seqs: a n-d tf.Tensor with dtype tf.int32
 
   Returns:
     a n-d tf.Tensor with dtype :string
@@ -151,10 +154,10 @@ class MyteVocabulary(Vocabulary):
     lower_bound = self._num_special_tokens
     upper_bound = self._byte_size + self._num_special_tokens
     ids = tf.ragged.boolean_mask(
-      data=ids,
+      data=seqs,
       mask=tf.math.logical_and(
-        tf.math.greater_equal(ids, lower_bound),
-        tf.math.less(ids, upper_bound),
+        tf.math.greater_equal(seqs, lower_bound),
+        tf.math.less(seqs, upper_bound),
       ),
     )
     ids = ids - self._num_special_tokens
@@ -163,9 +166,9 @@ class MyteVocabulary(Vocabulary):
     seqs = tf.strings.reduce_join(tf.gather(self.HEX_TENSOR_NO_SPACE, ids), axis=-1)
 
     # 1. demerge
-    seqs = self.rewrite(seqs, *self.demerge_io)
+    seqs = self.rewrite(seqs, "demerge")
     # 2. dedecompose
-    seqs = self.rewrite(seqs, *self.dedecompose_io)
+    seqs = self.rewrite(seqs, "dedecompose")
 
     # 3. Return valid utf-8 strings
     return tf.strings.unicode_transcode(
