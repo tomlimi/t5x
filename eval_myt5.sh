@@ -9,7 +9,7 @@ TFDS_DATA_DIR="gs://${BUCKET}/data"
 
 python3 ${T5X_DIR}/eval.py \
   --gin_file="${T5X_DIR}/t5x/examples/eval_myt5_mc4.gin" \
-  --gin.EVAL_OUTPUT_DIR="${EVAL_OUTPUT_DIR}" \
-  --gin.CHECKPOINT_PATH="${CHECKPOINT_PATH}" \
+  --gin.EVAL_OUTPUT_DIR="'${EVAL_OUTPUT_DIR}'" \
+  --gin.CHECKPOINT_PATH="'${CHECKPOINT_PATH}'" \
   --tfds_data_dir=${TFDS_DATA_DIR} \
   --alsologtostderr
