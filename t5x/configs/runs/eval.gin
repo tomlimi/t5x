@@ -29,6 +29,7 @@ from t5x import utils
 MIXTURE_OR_TASK_NAME = %gin.REQUIRED
 CHECKPOINT_PATH = %gin.REQUIRED
 EVAL_OUTPUT_DIR = %gin.REQUIRED
+SPLIT = %gin.REQUIRED
 TASK_FEATURE_LENGTHS = None # auto-computes the maximum features length to use.
 
 # DEPRECATED: Import the this module in your gin file.
@@ -54,7 +55,7 @@ seqio.Evaluator:
 utils.DatasetConfig:
   mixture_or_task_name = %MIXTURE_OR_TASK_NAME
   task_feature_lengths = %TASK_FEATURE_LENGTHS
-  split = 'test'
+  split = %SPLIT
   batch_size = 32
   shuffle = False
   seed = 42

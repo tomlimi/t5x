@@ -1,0 +1,14 @@
+# Register necessary SeqIO Tasks/Mixtures.
+from __gin__ import dynamic_registration
+#import t5.data.mixtures
+import __main__ as train_script
+import t5x.myt5.tasks
+
+
+include 't5x/examples/t5/myt5/small.gin'
+include 't5x/configs/runs/eval.gin'
+
+USE_CACHED_TASKS = False
+MIXTURE_OR_TASK_NAME = "myt5_mc4"
+SPLIT = "validation"
+TASK_FEATURE_LENGTHS = {'inputs': 1024, 'targets': 189}
