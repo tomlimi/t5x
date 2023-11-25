@@ -26,6 +26,7 @@ import t5.data
 import t5.data.tasks
 import tensorflow_datasets as tfds
 from t5x.myt5.vocabularies import MyteVocabulary
+import numpy as np
 
 
 MEAN_NOISE_SPAN_LENGTH = 20
@@ -53,6 +54,13 @@ MC4_LANGS = tfds.text.c4.MC4_LANGUAGES
 
 # =========================== Pretraining Tasks/Mixtures =======================
 # mC4
+
+def perplexities(targets, scores):
+  return {
+    "perplexity": seqio.metrics.Scalar(np.exp(np.mean(scores))),
+    "perplexity_summed": seqio.metrics.Scalar(np.exp(np.sum(scores)))
+  }
+
 for lang in MC4_LANGS:
   seqio.TaskRegistry.add(
       "myt5_mc4.{}".format(lang.replace("-", "_")),
@@ -76,7 +84,7 @@ for lang in MC4_LANGS:
           seqio.preprocessors.append_eos_after_trim,
       ],
       output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
-      metric_fns=[])
+      metric_fns=[perplexities])
 
 mc4 = ["myt5_mc4.{}".format(lang.replace("-", "_")) for lang in MC4_LANGS]
 seqio.MixtureRegistry.add("myt5_mc4", mc4, default_rate=DEFAULT_MIX_RATE)
