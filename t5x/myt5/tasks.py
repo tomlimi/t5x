@@ -40,6 +40,9 @@ DEFAULT_PREPROCESSORS = [
     seqio.preprocessors.append_eos_after_trim,
 ]
 
+VOCABULARY = MyteVocabulary()
+MASKING_PROBABILITY = 0.15
+
 DEFAULT_BYTE_OUTPUT_FEATURES = {
     "inputs": t5.data.Feature(vocabulary=MyteVocabulary()),
     "targets": t5.data.Feature(vocabulary=MyteVocabulary())
@@ -56,9 +59,14 @@ MC4_LANGS = tfds.text.c4.MC4_LANGUAGES
 # mC4
 
 def perplexities(targets, scores):
+  """Computes perplexities for a batch of targets and scores."""
+  bytes_in_targets = np.array([float(len(t.encode("utf-8"))) for t in targets])
+  encoded_in_targets = np.array([float(len(VOCABULARY.encode(t))) for t in targets])
+
   return {
-    "perplexity": seqio.metrics.Scalar(np.exp(np.mean(scores))),
-    "perplexity_summed": seqio.metrics.Scalar(np.exp(np.sum(scores)))
+    "perplexity_bytes": seqio.metrics.Scalar(np.sum(scores) / (np.sum(bytes_in_targets) * MASKING_PROBABILITY)),
+    "perplexity_encoded": seqio.metrics.Scalar(np.sum(scores) / (np.sum(encoded_in_targets) * MASKING_PROBABILITY)),
+    "compression_factor": seqio.metrics.Scalar(np.sum(encoded_in_targets) / np.sum(bytes_in_targets))
   }
 
 for lang in MC4_LANGS:

@@ -39,6 +39,9 @@ DEFAULT_PREPROCESSORS = [
     seqio.preprocessors.append_eos_after_trim,
 ]
 
+VOCABULARY = t5.data.ByteVocabulary()
+MASKING_PROBABILITY = 0.15
+
 DEFAULT_BYTE_OUTPUT_FEATURES = {
     "inputs": t5.data.Feature(vocabulary=t5.data.ByteVocabulary()),
     "targets": t5.data.Feature(vocabulary=t5.data.ByteVocabulary())
@@ -48,15 +51,21 @@ FEATURE_MAP = {
     "byt5": DEFAULT_BYTE_OUTPUT_FEATURES,
 }
 
-MC4_LANGS = tfds.text.c4.MC4_LANGUAGES
 
+MC4_LANGS = tfds.text.c4.MC4_LANGUAGES
+#MC4_LANGS = ["yi"]
 # =========================== Pretraining Tasks/Mixtures =======================
 # mC4
 
 def perplexities(targets, scores):
+  """Computes perplexities for a batch of targets and scores."""
+  bytes_in_targets = np.array([float(len(t.encode("utf-8"))) for t in targets])
+  encoded_in_targets = np.array([float(len(VOCABULARY.encode(t))) for t in targets])
+
   return {
-    "perplexity": seqio.metrics.Scalar(np.exp(np.mean(scores))),
-    "perplexity_summed": seqio.metrics.Scalar(np.exp(np.sum(scores)))
+    "perplexity_bytes": seqio.metrics.Scalar(np.sum(scores) / (np.sum(bytes_in_targets) * MASKING_PROBABILITY)),
+    "perplexity_encoded": seqio.metrics.Scalar(np.sum(scores) / (np.sum(encoded_in_targets) * MASKING_PROBABILITY)),
+    "compression_factor": seqio.metrics.Scalar(np.sum(encoded_in_targets) / np.sum(bytes_in_targets))
   }
 
 for lang in MC4_LANGS:
@@ -86,6 +95,9 @@ for lang in MC4_LANGS:
 
 mc4 = ["byt5_mc4.{}".format(lang.replace("-", "_")) for lang in MC4_LANGS]
 seqio.MixtureRegistry.add("byt5_mc4", mc4, default_rate=DEFAULT_MIX_RATE)
+
+
+## Full language modelling
 
 # # =========================== Fine-tuning Tasks/Mixtures =======================
 # # ----- XNLI -----
