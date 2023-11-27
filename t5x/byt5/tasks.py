@@ -63,8 +63,8 @@ def perplexities(targets, scores):
   encoded_in_targets = np.array([float(len(VOCABULARY.encode(t))) for t in targets])
 
   return {
-    "perplexity_bytes": seqio.metrics.Scalar(np.sum(scores) / (np.sum(bytes_in_targets) * MASKING_PROBABILITY)),
-    "perplexity_encoded": seqio.metrics.Scalar(np.sum(scores) / (np.sum(encoded_in_targets) * MASKING_PROBABILITY)),
+    "perplexity_bytes": seqio.metrics.Scalar(np.exp(np.sum(scores) / (np.sum(bytes_in_targets) * MASKING_PROBABILITY))),
+    "perplexity_encoded": seqio.metrics.Scalar(np.exp(np.sum(scores) / (np.sum(encoded_in_targets) * MASKING_PROBABILITY))),
     "compression_factor": seqio.metrics.Scalar(np.sum(encoded_in_targets) / np.sum(bytes_in_targets))
   }
 
