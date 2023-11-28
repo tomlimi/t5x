@@ -9,7 +9,7 @@ include 't5x/examples/t5/byt5/small.gin'
 include 't5x/configs/runs/eval.gin'
 
 USE_CACHED_TASKS = False
-MIXTURE_OR_TASK_NAME = "byt5_mc4"
+MIXTURE_OR_TASK_NAME = "lm_mc4"
 SPLIT = "validation"
 DROPOUT_RATE = 0.0
 TASK_FEATURE_LENGTHS = {'inputs': 1024, 'targets': 189}

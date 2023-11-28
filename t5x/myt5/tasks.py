@@ -55,19 +55,23 @@ FEATURE_MAP = {
 # MC4_LANGS = ["yi"]
 MC4_LANGS = tfds.text.c4.MC4_LANGUAGES
 
+MC4_VALIDATION_EXAMPLES = {
+    'af': 1757, 'am': 289,'ar': 92374, 'az': 7206, 'be': 2103, 'bg': 32690, 'bg-Latn': 41, 'bn': 15130,
+    'ca': 19562, 'ceb': 430, 'co': 211, 'cs': 82594, 'cy': 1016, 'da': 37071, 'de': 547566, 'el': 69435,
+    'el-Latn': 171, 'en': 3933379, 'eo': 546, 'es': 592258, 'et': 10276, 'eu': 2077, 'fa': 81034, 'fi': 36512,
+    'fil': 2381, 'fr': 453124, 'fy': 478, 'ga': 631, 'gd': 196, 'gl': 3811, 'gu': 1323, 'ha': 368, 'haw': 99,
+    'hi': 26721, 'hi-Latn': 261, 'hmn': 175, 'ht': 246, 'hu': 56905, 'hy': 3804,'id': 19601, 'ig': 103, 'is': 3210,
+    'it': 267322, 'iw': 17570, 'ja': 85618, 'ja-Latn': 221, 'jv': 253, 'ka': 3752, 'kk': 3443, 'km': 1359, 'kn': 1895,
+    'ko': 24240, 'ku': 417, 'ky': 1188, 'la': 1630, 'lb': 856, 'lo': 290, 'lt': 18428, 'lv': 10034, 'mg': 254, 'mi': 156,
+    'mk': 3713, 'ml': 3514, 'mn': 3021, 'mr': 4602, 'ms': 4719, 'mt': 1207, 'my': 1314, 'ne': 4738, 'nl': 137142,
+    'no': 31134, 'ny': 121, 'pa': 719, 'pl': 178481, 'ps': 468, 'pt': 246120, 'ro': 66384, 'ru': 1014169, 'ru-Latn': 616,
+    'sd': 206, 'si': 846, 'sk': 26882, 'sl': 12381, 'sm': 108, 'sn': 116, 'so': 1212, 'sq': 7057, 'sr': 4804, 'st': 103,
+    'su': 151, 'sv': 63488, 'sw': 1296, 'ta': 5770, 'te': 2010, 'tg': 1526, 'th': 28062, 'tr': 133062, 'uk': 56321,
+    'und': 3656588, 'ur': 3443, 'uz': 1259, 'vi': 132915, 'xh': 117, 'yi': 166, 'yo': 82, 'zh': 214733, 'zh-Latn': 492,
+    'zu': 253}
+
 # =========================== Pretraining Tasks/Mixtures =======================
 # mC4
-
-def perplexities(targets, scores):
-  """Computes perplexities for a batch of targets and scores."""
-  bytes_in_targets = np.array([float(len(t.encode("utf-8"))) for t in targets])
-  encoded_in_targets = np.array([float(len(VOCABULARY.encode(t))) for t in targets])
-
-  return {
-    "perplexity_bytes": seqio.metrics.Scalar(np.exp(np.sum(scores) / (np.sum(bytes_in_targets) * MASKING_PROBABILITY))),
-    "perplexity_encoded": seqio.metrics.Scalar(np.exp(np.sum(scores) / (np.sum(encoded_in_targets) * MASKING_PROBABILITY))),
-    "compression_factor": seqio.metrics.Scalar(np.sum(encoded_in_targets) / np.sum(bytes_in_targets))
-  }
 
 for lang in MC4_LANGS:
   seqio.TaskRegistry.add(
@@ -92,10 +96,52 @@ for lang in MC4_LANGS:
           seqio.preprocessors.append_eos_after_trim,
       ],
       output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
-      metric_fns=[perplexities])
+      metric_fns=[])
 
 mc4 = ["myt5_mc4.{}".format(lang.replace("-", "_")) for lang in MC4_LANGS]
 seqio.MixtureRegistry.add("myt5_mc4", mc4, default_rate=DEFAULT_MIX_RATE)
+
+# =========================== LM EVALUATION =======================
+
+
+def perplexities(targets, scores):
+  """Computes perplexities for a batch of targets and scores."""
+  bytes_in_targets = np.array([float(len(t.encode("utf-8"))) for t in targets])
+  encoded_in_targets = np.array([float(len(VOCABULARY.encode(t))) for t in targets])
+
+  return {
+    "perplexity_bytes": seqio.metrics.Scalar(np.exp(-np.sum(scores) / np.sum(bytes_in_targets))),
+    "perplexity_encoded": seqio.metrics.Scalar(np.exp(-np.sum(scores) / np.sum(encoded_in_targets))),
+    "compression_factor": seqio.metrics.Scalar(np.sum(encoded_in_targets) / np.sum(bytes_in_targets))
+  }
+
+
+for lang in MC4_LANGS:
+  seqio.TaskRegistry.add(
+      "lm_mc4.{}".format(lang.replace("-", "_")),
+      source=seqio.TfdsDataSource(
+          tfds_name="c4/multilingual:3.0.1",
+          splits={
+              "train": lang,
+              "validation": f"{lang}-validation[:{min(1000, MC4_VALIDATION_EXAMPLES[lang])}]",
+          }),
+      preprocessors=[
+          functools.partial(
+              t5.data.preprocessors.rekey,
+              key_map={
+                  "inputs": None,
+                  "targets": "text"
+              }),
+          seqio.preprocessors.tokenize,
+          seqio.CacheDatasetPlaceholder(),
+          t5.data.preprocessors.prefix_lm,
+          seqio.preprocessors.append_eos_after_trim,
+      ],
+      output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
+      metric_fns=[perplexities])
+
+lm_mc4 = ["lm_mc4.{}".format(lang.replace("-", "_")) for lang in MC4_LANGS]
+seqio.MixtureRegistry.add("lm_mc4", lm_mc4)
 
 # # =========================== Fine-tuning Tasks/Mixtures =======================
 # # ----- XNLI -----
