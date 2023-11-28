@@ -80,7 +80,7 @@ for lang in MC4_LANGS:
           tfds_name="c4/multilingual:3.0.1",
           splits={
               "train": lang,
-              "validation": f"{lang}-validation[:{min(1000, MC4_VALIDATION_EXAMPLES[lang]//2)}]",
+              "validation": f"{lang}-validation",
           }),
       preprocessors=[
           functools.partial(
