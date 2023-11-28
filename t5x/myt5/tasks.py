@@ -141,7 +141,7 @@ for lang in MC4_LANGS:
       metric_fns=[perplexities])
 
 lm_mc4 = ["lm_mc4.{}".format(lang.replace("-", "_")) for lang in MC4_LANGS]
-seqio.MixtureRegistry.add("lm_mc4", lm_mc4)
+seqio.MixtureRegistry.add("lm_mc4", lm_mc4, 1.)
 
 # # =========================== Fine-tuning Tasks/Mixtures =======================
 # # ----- XNLI -----
