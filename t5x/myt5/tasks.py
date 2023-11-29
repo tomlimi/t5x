@@ -15,7 +15,7 @@
 """Add MyT5 Tasks to registry."""
 import functools
 
-#import myt5.metrics as myt5_metrics
+
 # from multilingual_t5 import preprocessors
 # from ultilingual_t5 import utils
 # from multilingual_t5.evaluation import metrics as mt5_metrics
@@ -26,6 +26,8 @@ import t5.data
 import t5.data.tasks
 import tensorflow_datasets as tfds
 from t5x.myt5.vocabularies import MyteVocabulary
+import t5x.myt5.preprocessors as preprocessors
+from t5.evaluation import metrics
 import numpy as np
 
 
@@ -148,66 +150,66 @@ seqio.MixtureRegistry.add("lm_mc4", lm_mc4, 1.)
 # # XNLI zero-shot task. This fine-tunes on English MNLI training data and then
 # # evaluates on multilingual XNLI dev/test data.
 
-# XNLI_LANGS = [
-#     "ar", "bg", "de", "el", "en", "es", "fr", "hi", "ru", "sw", "th", "tr",
-#     "ur", "vi", "zh"
-# ]
+XNLI_LANGS = [
+    "ar", "bg", "de", "el", "en", "es", "fr", "hi", "ru", "sw", "th", "tr",
+    "ur", "vi", "zh"
+]
 
-# seqio.TaskRegistry.add(
-#     "myt5_xnli_train",
-#     source=seqio.TfdsDataSource(tfds_name="multi_nli:1.1.0", splits=["train"]),
-#     preprocessors=[
-#         preprocessors.process_mnli,
-#         *DEFAULT_PREPROCESSORS,
-#     ],
-#     output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
-#     metric_fns=[metrics.accuracy])
-# for lang in XNLI_LANGS:
-#   seqio.TaskRegistry.add(
-#       "myt5_xnli_dev_test.{}".format(lang),
-#       source=seqio.TfdsDataSource(
-#           tfds_name="xnli:1.1.0", splits=["validation", "test"]),
-#       preprocessors=[
-#           functools.partial(
-#               preprocessors.process_xnli, target_languages=[lang]),
-#           *DEFAULT_PREPROCESSORS,
-#       ],
-#       output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
-#       metric_fns=[metrics.accuracy])
-#   if lang == "en":
-#     continue
-#   seqio.TaskRegistry.add(
-#       "myt5_xnli_translate_train.{}".format(lang),
-#       source=seqio.TfdsDataSource(
-#           tfds_name="xtreme_xnli:1.1.0", splits=["train"]),
-#       preprocessors=[
-#           functools.partial(
-#               preprocessors.process_xnli, target_languages=[lang]),
-#           *DEFAULT_PREPROCESSORS,
-#       ],
-#       output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
-#       metric_fns=[metrics.accuracy])
-# seqio.TaskRegistry.add(
-#     "myt5_xnli_dev_test.all_langs",
-#     source=seqio.TfdsDataSource(
-#         tfds_name="xnli:1.1.0", splits=["validation", "test"]),
-#     preprocessors=[
-#         functools.partial(
-#             preprocessors.process_xnli, target_languages=XNLI_LANGS),
-#         *DEFAULT_PREPROCESSORS,
-#     ],
-#     output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
-#     metric_fns=[metrics.accuracy])
-# xnli_zeroshot = (["myt5_xnli_train", "myt5_xnli_dev_test.all_langs"] +
-#                  ["myt5_xnli_dev_test.{}".format(lang) for lang in XNLI_LANGS])
-# seqio.MixtureRegistry.add("myt5_xnli_zeroshot", xnli_zeroshot, default_rate=1.0)
-# xnli_translate_train = xnli_zeroshot + [
-#     "myt5_xnli_translate_train.{}".format(lang)
-#     for lang in XNLI_LANGS
-#     if lang != "en"
-# ]
-# seqio.MixtureRegistry.add(
-#     "myt5_xnli_translate_train", xnli_translate_train, default_rate=1.0)
+seqio.TaskRegistry.add(
+    "myt5_xnli_train",
+    source=seqio.TfdsDataSource(tfds_name="multi_nli:1.1.0", splits=["train"]),
+    preprocessors=[
+        preprocessors.process_mnli,
+        *DEFAULT_PREPROCESSORS,
+    ],
+    output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
+    metric_fns=[metrics.accuracy])
+for lang in XNLI_LANGS:
+  seqio.TaskRegistry.add(
+      "myt5_xnli_dev_test.{}".format(lang),
+      source=seqio.TfdsDataSource(
+          tfds_name="xnli:1.1.0", splits=["validation", "test"]),
+      preprocessors=[
+          functools.partial(
+              preprocessors.process_xnli, target_languages=[lang]),
+          *DEFAULT_PREPROCESSORS,
+      ],
+      output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
+      metric_fns=[metrics.accuracy])
+  if lang == "en":
+    continue
+  seqio.TaskRegistry.add(
+      "myt5_xnli_translate_train.{}".format(lang),
+      source=seqio.TfdsDataSource(
+          tfds_name="xtreme_xnli:1.1.0", splits=["train"]),
+      preprocessors=[
+          functools.partial(
+              preprocessors.process_xnli, target_languages=[lang]),
+          *DEFAULT_PREPROCESSORS,
+      ],
+      output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
+      metric_fns=[metrics.accuracy])
+seqio.TaskRegistry.add(
+    "myt5_xnli_dev_test.all_langs",
+    source=seqio.TfdsDataSource(
+        tfds_name="xnli:1.1.0", splits=["validation", "test"]),
+    preprocessors=[
+        functools.partial(
+            preprocessors.process_xnli, target_languages=XNLI_LANGS),
+        *DEFAULT_PREPROCESSORS,
+    ],
+    output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
+    metric_fns=[metrics.accuracy])
+xnli_zeroshot = (["myt5_xnli_train", "myt5_xnli_dev_test.all_langs"] +
+                 ["myt5_xnli_dev_test.{}".format(lang) for lang in XNLI_LANGS])
+seqio.MixtureRegistry.add("myt5_xnli_zeroshot", xnli_zeroshot, default_rate=1.0)
+xnli_translate_train = xnli_zeroshot + [
+    "myt5_xnli_translate_train.{}".format(lang)
+    for lang in XNLI_LANGS
+    if lang != "en"
+]
+seqio.MixtureRegistry.add(
+    "myt5_xnli_translate_train", xnli_translate_train, default_rate=1.0)
 
 # # ----- PAWS -----
 # label_names = ["different_meaning", "paraphrase"]
