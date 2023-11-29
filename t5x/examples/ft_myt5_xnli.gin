@@ -1,0 +1,28 @@
+from __gin__ import dynamic_registration
+
+#import t5.data.mixtures
+import __main__ as train_script
+import t5x.myt5.tasks
+
+
+import __main__ as train_script
+from t5.data import mixtures
+from t5x import partitioning
+from t5x import utils
+
+include 't5x/examples/t5/myt5/small.gin'
+include "t5x/configs/runs/finetune.gin"
+
+MIXTURE_OR_TASK_NAME = "myt5_xnli_train"
+TASK_FEATURE_LENGTHS = {'inputs': 1024, 'targets': 128}
+TRAIN_STEPS = 262144
+DROPOUT_RATE = 0.1
+BATCH_SIZE = 512
+EVAL_PERIOD = 2500
+
+# `LOSS_NORMALIZING_FACTOR`: When fine-tuning a model that was pre-trained
+# using Mesh Tensorflow (e.g. the public T5 / mT5 / ByT5 models), this should be
+# set to `pretraining batch_size` * `target_token_length`. For T5 and T5.1.1:
+# `2048 * 114`. For mT5: `1024 * 229`. For ByT5: `1024 * 189`.
+LOSS_NORMALIZING_FACTOR = 91136
+USE_CACHED_TASKS = False
