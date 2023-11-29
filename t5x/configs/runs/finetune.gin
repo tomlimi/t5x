@@ -142,7 +142,7 @@ utils.SaveCheckpointConfig:
   save_dataset = False  # don't checkpoint dataset state
 
 trainer.Trainer:
-  num_microbatches = None
+  num_microbatches = 4
   learning_rate_fn = @utils.create_learning_rate_scheduler()
 utils.create_learning_rate_scheduler:
   factors = 'constant'
