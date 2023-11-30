@@ -41,7 +41,7 @@ class MyteVocabulary(Vocabulary):
   def get_wpt_and_tensor(self, file_pre: str, file_post: str, dehexify_output: bool):
     wpt = WordpieceTokenizer(file_pre,
                                  suffix_indicator = '',
-                                 max_bytes_per_word = 2000,
+                                 max_bytes_per_word = 600,
                                  token_out_type=tf.int32)
 
     with open(file_post, "r") as out_file:
