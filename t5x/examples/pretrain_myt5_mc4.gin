@@ -5,12 +5,12 @@ import __main__ as train_script
 import t5x.myt5.tasks
 
 
-include 't5x/examples/t5/myt5/small.gin'
+include 't5x/examples/t5/myt5/large.gin'
 include 't5x/configs/runs/pretrain.gin'
 
 USE_CACHED_TASKS = False
 MIXTURE_OR_TASK_NAME = "myt5_mc4"
-TRAIN_STEPS = 250000
+TRAIN_STEPS = 1000000
 DROPOUT_RATE = 0.0
 BATCH_SIZE = 256
 TASK_FEATURE_LENGTHS = {'inputs': 1024, 'targets': 189}
