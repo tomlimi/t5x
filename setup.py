@@ -50,7 +50,7 @@ setuptools.setup(
         'absl-py',
         'cached_property',
         'clu @ git+https://github.com/google/CommonLoopUtils#egg=clu',
-        'flax',
+        'flax @ git+https://github.com/google/flax#egg=flax',
         'fiddle >= 0.2.5',
         'gin-config',
         f'jax >= {_jax_version}',
@@ -63,7 +63,7 @@ setuptools.setup(
         'optax @ git+https://github.com/deepmind/optax#egg=optax',
         'orbax-checkpoint',
         'seqio @ git+https://github.com/google/seqio#egg=seqio',
-        'tensorflow-cpu > 2.14.0',
+        # 'tensorflow-cpu > 2.14.0',
         'tensorstore >= 0.1.20',
         'tensorflow-text',
         # remove this when sentencepiece_model_pb2 is re-generated in the
