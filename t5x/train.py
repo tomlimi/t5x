@@ -49,6 +49,15 @@ from t5x import utils
 import tensorflow as tf
 # pylint:enable=g-import-not-at-top
 
+# For running in TPU pods
+print("Tensorflow version " + tf.__version__)
+
+cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver()
+print('Running on TPU ', cluster_resolver.cluster_spec().as_dict()['worker'])
+
+tf.config.experimental_connect_to_cluster(cluster_resolver)
+tf.tpu.experimental.initialize_tpu_system(cluster_resolver)
+strategy = tf.distribute.experimental.TPUStrategy(cluster_resolver)
 # pylint:enable=g-import-not-at-top
 
 # Automatically search for gin files relative to the T5X package.
