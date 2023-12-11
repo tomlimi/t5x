@@ -52,7 +52,7 @@ class MyteVocabulary(Vocabulary):
     self.wordpiece_models['demerge'], self.output_tensors['demerge']= self.get_wpt_and_tensor(MERGE_PRE_BLOB, MERGE_POST_BLOB,
                                                                                               MERGE_POST_FILE, MERGE_PRE_FILE,
                                                                                               dehexify_output=False)
-    self.wordpiece_models['dedecompose'], self.output_tensors['dedecompose'] = self.get_wpt_and_tensor(DECOMPOSE_POST_DEDUP_FILE, DECOMPOSE_PRE_DEDUP_FILE,
+    self.wordpiece_models['dedecompose'], self.output_tensors['dedecompose'] = self.get_wpt_and_tensor(DECOMPOSE_POST_DEDUP_BLOB, DECOMPOSE_PRE_DEDUP_BLOB,
                                                                                                        DECOMPOSE_POST_DEDUP_FILE, DECOMPOSE_PRE_DEDUP_FILE, dehexify_output=True)
 
 
@@ -63,11 +63,8 @@ class MyteVocabulary(Vocabulary):
     blob_pre = bucket.blob(blob_pre_name)
     blob_post = bucket.blob(blob_post_name)
 
-    with open(file_pre, "wb") as out_pre_file:
-      blob_pre.download_to_file(out_pre_file)
-
-    with open(file_post, "wb") as out_post_file:
-        blob_post.download_to_file(out_post_file)
+    blob_pre.download_to_filename(file_pre)
+    blob_post.download_to_filename(file_post)
 
     wpt = WordpieceTokenizer(file_pre,
                                  suffix_indicator = '',
