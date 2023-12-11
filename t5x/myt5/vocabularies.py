@@ -11,14 +11,14 @@ from google.cloud import storage
 BUCKET_NAME = "t5-bucket-eur"
 
 
-MERGE_PRE_FILE = os.path.join(os.path.dirname(__file__), "merge_pre.txt")
-MERGE_POST_FILE = os.path.join(os.path.dirname(__file__), "merge_post.txt")
+MERGE_PRE_FILE = os.path.join("/tmp", "merge_pre.txt")
+MERGE_POST_FILE = os.path.join("/tmp", "merge_post.txt")
 
-DECOMPOSE_PRE_FILE = os.path.join(os.path.dirname(__file__), "decompose_pre.txt")
-DECOMPOSE_POST_FILE = os.path.join(os.path.dirname(__file__), "decompose_post.txt")
+DECOMPOSE_PRE_FILE = os.path.join("/tmp", "decompose_pre.txt")
+DECOMPOSE_POST_FILE = os.path.join("/tmp", "decompose_post.txt")
 
-DECOMPOSE_PRE_DEDUP_FILE = os.path.join(os.path.dirname(__file__), "decompose_pre_dedup.txt")
-DECOMPOSE_POST_DEDUP_FILE = os.path.join(os.path.dirname(__file__), "decompose_post_dedup.txt")
+DECOMPOSE_PRE_DEDUP_FILE = os.path.join("/tmp","decompose_pre_dedup.txt")
+DECOMPOSE_POST_DEDUP_FILE = os.path.join("/tmp", "decompose_post_dedup.txt")
 
 MERGE_PRE_BLOB = "morphology_files/merge_pre.txt"
 MERGE_POST_BLOB = "morphology_files/merge_post.txt"
@@ -63,8 +63,11 @@ class MyteVocabulary(Vocabulary):
     blob_pre = bucket.blob(blob_pre_name)
     blob_post = bucket.blob(blob_post_name)
 
-    blob_pre.download_to_filename(file_pre)
-    blob_post.download_to_filename(file_post)
+    with open(file_pre, "wb") as out_pre_file:
+      blob_pre.download_to_file(out_pre_file)
+
+    with open(file_post, "wb") as out_post_file:
+        blob_post.download_to_file(out_post_file)
 
     wpt = WordpieceTokenizer(file_pre,
                                  suffix_indicator = '',
