@@ -7,14 +7,25 @@ import binascii
 from tensorflow_text import WordpieceTokenizer
 import os
 
-MERGE_PRE_FILE = os.path.join(os.path.dirname(__file__), "merge_pre.txt")
-MERGE_POST_FILE = os.path.join(os.path.dirname(__file__), "merge_post.txt")
+if os.environ.get("TPU_NAME", None):
+  MERGE_PRE_FILE = os.path.join(os.path.dirname(__file__), "merge_pre.txt")
+  MERGE_POST_FILE = os.path.join(os.path.dirname(__file__), "merge_post.txt")
 
-DECOMPOSE_PRE_FILE = os.path.join(os.path.dirname(__file__), "decompose_pre.txt")
-DECOMPOSE_POST_FILE = os.path.join(os.path.dirname(__file__), "decompose_post.txt")
+  DECOMPOSE_PRE_FILE = os.path.join(os.path.dirname(__file__), "decompose_pre.txt")
+  DECOMPOSE_POST_FILE = os.path.join(os.path.dirname(__file__), "decompose_post.txt")
 
-DECOMPOSE_PRE_DEDUP_FILE = os.path.join(os.path.dirname(__file__), "decompose_pre_dedup.txt")
-DECOMPOSE_POST_DEDUP_FILE = os.path.join(os.path.dirname(__file__), "decompose_post_dedup.txt")
+  DECOMPOSE_PRE_DEDUP_FILE = os.path.join(os.path.dirname(__file__), "decompose_pre_dedup.txt")
+  DECOMPOSE_POST_DEDUP_FILE = os.path.join(os.path.dirname(__file__), "decompose_post_dedup.txt")
+else:
+  BUCKET_NAME = "t5-bucket-eur"
+  MERGE_PRE_FILE = f"gs://{BUCKET_NAME}/morphology_files/merge_pre.txt"
+  MERGE_POST_FILE = f"gs://{BUCKET_NAME}/morphology_files/merge_post.txt"
+
+  DECOMPOSE_PRE_FILE = f"gs://{BUCKET_NAME}/morphology_files/decompose_pre.txt"
+  DECOMPOSE_POST_FILE = f"gs://{BUCKET_NAME}/morphology_files/decompose_post.txt"
+
+  DECOMPOSE_PRE_DEDUP_FILE = f"gs://{BUCKET_NAME}/morphology_files/decompose_pre_dedup.txt"
+  DECOMPOSE_POST_DEDUP_FILE = f"gs://{BUCKET_NAME}/morphology_files/decompose_post_dedup.txt"
 
 PAD_ID = 0
 
