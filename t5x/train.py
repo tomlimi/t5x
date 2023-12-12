@@ -422,7 +422,7 @@ def train(
 
   # Start warming up the input pipeline in the background. This must happen
   # after input pipeline checkpoints were restored.
-  first_batch_ready = train_iter.peek_async()
+  #first_batch_ready = train_iter.peek_async()
 
   # 3. If no checkpoint to restore, init from scratch.
   train_state = train_state or train_state_initializer.from_scratch(init_rng)
@@ -663,7 +663,7 @@ def train(
   # We are cheating here. The input pipeline already started warmup when
   # first_batch_ready was created. The warmup was then interleaved with the
   # model compilation above. We just measure the additional time needed.
-  first_batch_ready.result()
+  # first_batch_ready.result()
   train_iter_warmup_tock = time.time()
   train_metrics.write_scalar(
       'timing/train_iter_warmup',
