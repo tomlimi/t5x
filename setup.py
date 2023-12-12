@@ -53,8 +53,8 @@ setuptools.setup(
         'flax', #@ git+https://github.com/google/flax#egg=flax',
         'fiddle >= 0.2.5',
         'gin-config',
-        #f'jax >= {_jax_version}',
-        f'jaxlib -f https://storage.googleapis.com/jax-releases/jax_releases.html',
+        f'jax >= {_jax_version}',
+        f'jaxlib >= {_jaxlib_version}',
         (
             'jestimator @'
             ' git+https://github.com/google-research/jestimator#egg=jestimator'
@@ -82,7 +82,7 @@ setuptools.setup(
         ],
         'test': ['pytest', 't5'],
         # Cloud TPU requirements.
-        'tpu': [f'jax[tpu] -f https://storage.googleapis.com/jax-releases/libtpu_releases.html'],
+        'tpu': [f'jax[tpu] >= {_jax_version}'],
         'gpu': [
             'ipdb==0.13.9',
             'fasttext==0.9.2',
