@@ -6,28 +6,15 @@ import tensorflow as tf
 import binascii
 from tensorflow_text import WordpieceTokenizer
 import os
-from google.cloud import storage
 
-BUCKET_NAME = "t5-bucket-eur"
+MERGE_PRE_FILE = os.path.join(os.path.dirname(__file__), "merge_pre.txt")
+MERGE_POST_FILE = os.path.join(os.path.dirname(__file__), "merge_post.txt")
 
+DECOMPOSE_PRE_FILE = os.path.join(os.path.dirname(__file__), "decompose_pre.txt")
+DECOMPOSE_POST_FILE = os.path.join(os.path.dirname(__file__), "decompose_post.txt")
 
-MERGE_PRE_FILE = os.path.join("/tmp", "merge_pre.txt")
-MERGE_POST_FILE = os.path.join("/tmp", "merge_post.txt")
-
-DECOMPOSE_PRE_FILE = os.path.join("/tmp", "decompose_pre.txt")
-DECOMPOSE_POST_FILE = os.path.join("/tmp", "decompose_post.txt")
-
-DECOMPOSE_PRE_DEDUP_FILE = os.path.join("/tmp","decompose_pre_dedup.txt")
-DECOMPOSE_POST_DEDUP_FILE = os.path.join("/tmp", "decompose_post_dedup.txt")
-
-MERGE_PRE_BLOB = "morphology_files/merge_pre.txt"
-MERGE_POST_BLOB = "morphology_files/merge_post.txt"
-
-DECOMPOSE_PRE_BLOB = "morphology_files/decompose_pre.txt"
-DECOMPOSE_POST_BLOB = "morphology_files/decompose_post.txt"
-
-DECOMPOSE_PRE_DEDUP_BLOB = "morphology_files/decompose_pre_dedup.txt"
-DECOMPOSE_POST_DEDUP_BLOB = "morphology_files/decompose_post_dedup.txt"
+DECOMPOSE_PRE_DEDUP_FILE = os.path.join(os.path.dirname(__file__), "decompose_pre_dedup.txt")
+DECOMPOSE_POST_DEDUP_FILE = os.path.join(os.path.dirname(__file__), "decompose_post_dedup.txt")
 
 PAD_ID = 0
 
@@ -43,29 +30,15 @@ class MyteVocabulary(Vocabulary):
     self.wordpiece_models = {}
     self.output_tensors = {}
 
-    self.wordpiece_models['decompose'], self.output_tensors['decompose'] = self.get_wpt_and_tensor(DECOMPOSE_PRE_BLOB, DECOMPOSE_POST_BLOB,
-                                                                                                   DECOMPOSE_PRE_FILE, DECOMPOSE_POST_FILE, dehexify_output=False)
-    self.wordpiece_models['merge'], self.output_tensors['merge'] = self.get_wpt_and_tensor(MERGE_PRE_BLOB, MERGE_POST_BLOB,
-                                                                                           MERGE_PRE_FILE, MERGE_POST_FILE,
-                                                                                           dehexify_output=True)
+    self.wordpiece_models['decompose'], self.output_tensors['decompose'] = self.get_wpt_and_tensor(DECOMPOSE_PRE_FILE, DECOMPOSE_POST_FILE, dehexify_output=False)
+    self.wordpiece_models['merge'], self.output_tensors['merge'] = self.get_wpt_and_tensor(MERGE_PRE_FILE, MERGE_POST_FILE, dehexify_output=True)
 
-    self.wordpiece_models['demerge'], self.output_tensors['demerge']= self.get_wpt_and_tensor(MERGE_PRE_BLOB, MERGE_POST_BLOB,
-                                                                                              MERGE_POST_FILE, MERGE_PRE_FILE,
-                                                                                              dehexify_output=False)
-    self.wordpiece_models['dedecompose'], self.output_tensors['dedecompose'] = self.get_wpt_and_tensor(DECOMPOSE_POST_DEDUP_BLOB, DECOMPOSE_PRE_DEDUP_BLOB,
-                                                                                                       DECOMPOSE_POST_DEDUP_FILE, DECOMPOSE_PRE_DEDUP_FILE, dehexify_output=True)
+    self.wordpiece_models['demerge'], self.output_tensors['demerge']= self.get_wpt_and_tensor(MERGE_POST_FILE, MERGE_PRE_FILE, dehexify_output=False)
+    self.wordpiece_models['dedecompose'], self.output_tensors['dedecompose'] = self.get_wpt_and_tensor(DECOMPOSE_POST_DEDUP_FILE, DECOMPOSE_PRE_DEDUP_FILE, dehexify_output=True)
 
 
 
-  def get_wpt_and_tensor(self, blob_pre_name: str, blob_post_name: str, file_pre: str, file_post: str, dehexify_output: bool):
-    client = storage.Client()
-    bucket = client.get_bucket(BUCKET_NAME)
-    blob_pre = bucket.blob(blob_pre_name)
-    blob_post = bucket.blob(blob_post_name)
-
-    blob_pre.download_to_filename(file_pre)
-    blob_post.download_to_filename(file_post)
-
+  def get_wpt_and_tensor(self, file_pre: str, file_post: str, dehexify_output: bool):
     wpt = WordpieceTokenizer(file_pre,
                                  suffix_indicator = '',
                                  max_bytes_per_word = 600,
