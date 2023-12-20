@@ -1,4 +1,10 @@
 # Model dir to save logs, ckpts, etc. in "gs://model_dir" format.
+export TPU_LIBRARY_PATH='/home/tomasz/miniconda3/envs/t5x/lib/python3.10/site-packages/libtpu/libtpu.so'
+source ~/.bashrc
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate t5x
+
+
 BUCKET="t5-bucket-eur" #
 ACCOUNT=tomasz
 
