@@ -8,7 +8,7 @@ conda activate t5x
 BUCKET="t5-bucket-eur" #
 ACCOUNT=tomasz
 
-EXPERIMENT="byt5_large"
+EXPERIMENT="byt5_large_250000"
 MODEL_DIR="gs://${BUCKET}/models/${EXPERIMENT}"
 T5X_DIR="/home/${ACCOUNT}/t5x"  # directory where the T5X repo is cloned.
 TFDS_DATA_DIR="gs://${BUCKET}/data"
