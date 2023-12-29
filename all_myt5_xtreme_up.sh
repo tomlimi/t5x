@@ -5,7 +5,7 @@ do
   echo "Finetuning and inference for ${size} model"
   for task in "qa_in_lang" "qa_cross_lang" "ner" "transliteration"
   do
-    bash ft_xtreme_up.sh "my_t5" ${size} ${task}
-    bash infer_xtreme_up.sh "my_t5" ${size} ${task}
+    bash ft_xtreme_up.sh "myt5" ${size} ${task}
+    bash infer_xtreme_up.sh "myt5" ${size} ${task}
   done
 done

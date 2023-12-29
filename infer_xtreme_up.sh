@@ -15,7 +15,7 @@ TRAIN_STEPS=256500
 MODEL_DIR="gs://${BUCKET}/finetune/${MODEL_NAME}_${MODEL_SIZE}_${TASK}"
 TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/${TASK}"
 
-if [ $TASK = "qa_in_lang" || $TASK = "qa_cross_lang" ]
+if [ $TASK = "qa_in_lang" ] || [ $TASK = "qa_cross_lang" ]
 then
   TASK_TYPE="qa_tasks"
 elif [ $TASK = "ner" ]
