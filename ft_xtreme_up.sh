@@ -22,6 +22,15 @@ then
 elif [ $TASK = "transliteration" ]
 then
   TASK_TYPE="transliteration_tasks"
+elif [ $TASK = "semantic_parsing" ]
+then
+  TASK_TYPE="semantic_parsing_tasks"
+elif [ $TASK = "autocomplete" ]
+then
+  TASK_TYPE="autocomplete_tasks"
+elif [ $TASK = "retrieval_in_lang" ] || [ $TASK = "retrieval_cross_lang" ]
+then
+  TASK_TYPE="retrieval_tasks"
 fi
 
 if [ $MODEL_NAME = "myt5" ]
