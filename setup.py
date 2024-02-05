@@ -46,7 +46,7 @@ setuptools.setup(
     },
     scripts=[],
     install_requires=[
-        'airio @ git+https://github.com/google/airio#egg=airio',
+        'airio @ git+https://github.com/google/airio.git@0e31f368b12d298e133b3a774e27d9bb0e85d087#egg=airio',
         'absl-py',
         'cached_property',
         'clu @ git+https://github.com/google/CommonLoopUtils#egg=clu',
