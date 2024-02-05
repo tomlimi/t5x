@@ -11,7 +11,7 @@ ACCOUNT="t_limisiewicz_gmail_com"
 
 
 T5X_DIR="/home/${ACCOUNT}/t5x"
-TRAIN_STEPS=256500
+TRAIN_STEPS=256500 # pick steps based on the validation results
 MODEL_DIR="gs://${BUCKET}/finetune/${MODEL_NAME}_${MODEL_SIZE}_${TASK}"
 TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/${TASK}"
 
