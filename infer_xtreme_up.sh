@@ -5,13 +5,14 @@ ACCOUNT="t_limisiewicz_gmail_com"
 MODEL_NAME=$1 # myt5 or byt5
 MODEL_SIZE=$2 # small, base or large
 TASK=$3 # qa_in_lang, qa_cross_lang, ner or translation
+TRAIN_STEPS=$4 # train steps should be decided based on the validation results
+SPLIT=$5 # dev or test
 
 BUCKET="t5-bucket-eur"
 ACCOUNT="t_limisiewicz_gmail_com"
 
 
 T5X_DIR="/home/${ACCOUNT}/t5x"
-TRAIN_STEPS=256500 # pick steps based on the validation results
 MODEL_DIR="gs://${BUCKET}/finetune/${MODEL_NAME}_${MODEL_SIZE}_${TASK}"
 TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/${TASK}"
 
@@ -52,5 +53,5 @@ python3 ${T5X_DIR}/t5x/eval.py \
   --gin.CHECKPOINT_PATH=\'${MODEL_DIR}/checkpoint_${TRAIN_STEPS}\' \
   --gin.MIXTURE_OR_TASK_NAME=\'xtreme_up_${TASK}_${MODEL_NAME}\' \
   --gin.MIXTURE_OR_TASK_MODULE=\'xtreme_up.baseline.${TASK_TYPE}\' \
-  --gin.utils.DatasetConfig.split=\'test\' \
-  --gin.SPLIT=\'test\'
+  --gin.utils.DatasetConfig.split=\'${SPLIT}\' \
+  --gin.SPLIT=\'${SPLIT}\'

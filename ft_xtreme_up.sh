@@ -56,9 +56,8 @@ python3 ${T5X_DIR}/t5x/train.py \
   --gin.BATCH_SIZE=64 \
   --gin.TASK_FEATURE_LENGTHS=\{\'inputs\':\ 1024,\ \'targets\':\ 128\} \
   --gin.TRAIN_STEPS=${TRAIN_STEPS} \
+  --gin.EVALUATOR_NUM_EXAMPLES=50 \
   --gin.EVAL_PERIOD=500 \
   --gin.JSON_WRITE_N_RESULTS=20 \
-  --gin.train.train_eval_dataset_cfg=None \
-  --gin.train.infer_eval_dataset_cfg=None \
   --gin.utils.SaveCheckpointConfig.period=500 \
   --gin.utils.DatasetConfig.pack=False
