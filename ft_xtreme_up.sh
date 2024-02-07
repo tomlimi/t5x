@@ -8,7 +8,7 @@ MODEL_SIZE=$2 # small, base or large
 TASK=$3 # qa_in_lang, qa_cross_lang, ner or translation
 
 T5X_DIR="/home/${ACCOUNT}/t5x"
-TRAIN_STEPS=256000
+TRAIN_STEPS=255000
 CHECKPOINT="gs://${BUCKET}/checkpoints/${MODEL_NAME}_${MODEL_SIZE}/checkpoint_250000"
 MODEL_DIR="gs://${BUCKET}/finetune/${MODEL_NAME}_${MODEL_SIZE}_${TASK}"
 TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/${TASK}"
@@ -60,4 +60,5 @@ python3 ${T5X_DIR}/t5x/train.py \
   --gin.EVAL_PERIOD=500 \
   --gin.JSON_WRITE_N_RESULTS=20 \
   --gin.utils.SaveCheckpointConfig.period=500 \
+  --gin.utils.SaveCheckpointConfig.keep=15 \
   --gin.utils.DatasetConfig.pack=False
