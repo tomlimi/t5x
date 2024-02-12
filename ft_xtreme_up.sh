@@ -10,7 +10,7 @@ TASK=$3 # qa_in_lang, qa_cross_lang, ner or translation
 T5X_DIR="/home/${ACCOUNT}/t5x"
 TRAIN_STEPS=260000
 CHECKPOINT="gs://${BUCKET}/checkpoints/${MODEL_NAME}_${MODEL_SIZE}/checkpoint_250000"
-MODEL_DIR="gs://${BUCKET}/finetune/${MODEL_NAME}_${MODEL_SIZE}_${TASK}"
+MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_${TASK}"
 TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/${TASK}"
 
 if [ $TASK = "qa_in_lang" ] || [ $TASK = "qa_cross_lang" ]

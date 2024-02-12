@@ -13,7 +13,7 @@ ACCOUNT="t_limisiewicz_gmail_com"
 
 
 T5X_DIR="/home/${ACCOUNT}/t5x"
-MODEL_DIR="gs://${BUCKET}/finetune/${MODEL_NAME}_${MODEL_SIZE}_${TASK}"
+MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_${TASK}"
 TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/${TASK}"
 
 if [ $TASK = "qa_in_lang" ] || [ $TASK = "qa_cross_lang" ]
