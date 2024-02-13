@@ -32,6 +32,10 @@ elif [ $TASK = "retrieval_in_lang" ] || [ $TASK = "retrieval_cross_lang" ]
 then
   TASK_TYPE="retrieval_tasks"
 fi
+elif [ $TASK = "translation" ]
+then
+  TASK_TYPE="mt_tasks"
+fi
 
 if [ $MODEL_NAME = "myt5" ]
 then
