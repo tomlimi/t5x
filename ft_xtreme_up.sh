@@ -31,7 +31,7 @@ then
 elif [ $TASK = "retrieval_in_lang" ] || [ $TASK = "retrieval_cross_lang" ]
 then
   TASK_TYPE="retrieval_tasks"
-elif [ $TASK = "translation" ] || [ $TASK = "translation_all_lang" ]
+elif [ $TASK = "translation" ] || [ $TASK = "translation_all_langs" ]
 then
   TASK_TYPE="mt_tasks"
   MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_translation"
