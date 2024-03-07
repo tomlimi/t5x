@@ -5,7 +5,7 @@ ACCOUNT="t_limisiewicz_gmail_com"
 
 MODEL_NAME=$1 # myt5 or byt5
 MODEL_SIZE=$2 # small, base or large
-TASK=$3 # qa_in_lang, qa_cross_lang, ner or translation
+TASK=$3 # qa_in_lang, qa_cross_lang, ner or translation translation_selected
 
 T5X_DIR="/home/${ACCOUNT}/t5x"
 TRAIN_STEPS=260000
@@ -40,6 +40,11 @@ elif [ $TASK = "translation_selected" ]
 then
   TASK_TYPE="mt_tasks"
   MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_translation_selected"
+  TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/translation"
+elif [ $TASK = "translation_en_te" ]
+then
+  TASK_TYPE="mt_tasks"
+  MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_translation_en_te"
   TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/translation"
 fi
 
