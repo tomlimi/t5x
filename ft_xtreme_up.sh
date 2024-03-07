@@ -36,6 +36,11 @@ then
   TASK_TYPE="mt_tasks"
   MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_translation"
   TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/translation"
+elif [ $TASK = "translation_selected" ]
+then
+  TASK_TYPE="mt_tasks"
+  MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_translation_selected"
+  TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/translation"
 fi
 
 if [ $MODEL_NAME = "myt5" ]
