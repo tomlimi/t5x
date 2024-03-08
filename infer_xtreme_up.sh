@@ -37,6 +37,16 @@ then
 elif [ $TASK = "translation" ]
 then
   TASK_TYPE="mt_tasks"
+elif [ $TASK = "translation_selected" ] || [ $TASK = "translation_all_langs" ]
+then
+  TASK_TYPE="mt_tasks"
+  MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_translation_selected"
+  TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/translation"
+elif [ $TASK = "translation_en_te" ]
+then
+  TASK_TYPE="mt_tasks"
+  MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_translation_en_te"
+  TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/translation"
 fi
 
 if [ $MODEL_NAME = "myt5" ]
