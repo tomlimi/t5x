@@ -47,6 +47,9 @@ then
   TASK_TYPE="mt_tasks"
   MODEL_DIR="gs://${BUCKET}/finetune_new/${MODEL_NAME}_${MODEL_SIZE}_translation_en_te"
   TSV_DATA_DIR="gs://${BUCKET}/data/xtreme_up/translation"
+elif [ $TASK = "xnli" ]
+then
+  TASK_TYPE="xnli_tasks"
 fi
 
 if [ $MODEL_NAME = "myt5" ]
